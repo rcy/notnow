@@ -4,7 +4,9 @@
 
 package yikes
 
-import ()
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
 
 type SchemaVersion struct {
 	Version int32
@@ -14,4 +16,5 @@ type Token struct {
 	ID         int32
 	Token      []byte
 	SessionKey string
+	Uuid       pgtype.UUID
 }

@@ -38,7 +38,7 @@ ALTER TABLE public.schema_version OWNER TO postgres;
 CREATE TABLE public.tokens (
     id integer NOT NULL,
     token jsonb NOT NULL,
-    session_key text NOT NULL
+    uuid uuid DEFAULT public.uuid_generate_v4() NOT NULL
 );
 
 

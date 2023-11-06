@@ -9,27 +9,29 @@ import (
 	"context"
 )
 
-const createToken = `-- name: CreateToken :exec
-insert into tokens(token, session_key) values($1,$2)
+const createToken = `-- name: CreateToken :one
+insert into tokens(token) values($1) returning uuid::text
 `
 
-type CreateTokenParams struct {
-	Token      []byte
-	SessionKey string
-}
-
-func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) error {
-	_, err := q.db.Exec(ctx, createToken, arg.Token, arg.SessionKey)
-	return err
+func (q *Queries) CreateToken(ctx context.Context, token []byte) (string, error) {
+	row := q.db.QueryRow(ctx, createToken, token)
+	var uuid string
+	err := row.Scan(&uuid)
+	return uuid, err
 }
 
 const getTokenBySessionKey = `-- name: GetTokenBySessionKey :one
-select id, token, session_key from tokens where session_key = $1 limit 1
+select id, token, session_key, uuid from tokens where session_key = $1 limit 1
 `
 
 func (q *Queries) GetTokenBySessionKey(ctx context.Context, sessionKey string) (Token, error) {
 	row := q.db.QueryRow(ctx, getTokenBySessionKey, sessionKey)
 	var i Token
-	err := row.Scan(&i.ID, &i.Token, &i.SessionKey)
+	err := row.Scan(
+		&i.ID,
+		&i.Token,
+		&i.SessionKey,
+		&i.Uuid,
+	)
 	return i, err
 }

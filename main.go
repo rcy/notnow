@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"yikes/db/yikes"
 
@@ -70,7 +71,7 @@ func main() {
 
 		queries := yikes.New(conn)
 
-		err = queries.CreateToken(context.TODO(), yikes.CreateTokenParams{Token: bytes, SessionKey: "FIXME"})
+		key, err := queries.CreateToken(context.TODO(), bytes)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -82,12 +83,12 @@ func main() {
 		// 	return
 		// }
 
-		// http.SetCookie(w, &http.Cookie{
-		// 	Name:    "ike-session",
-		// 	Value:   key,
-		// 	Expires: time.Now().Add(30 * 24 * time.Hour),
-		// 	Path:    "/",
-		// })
+		http.SetCookie(w, &http.Cookie{
+			Name:    "ike-session",
+			Value:   key,
+			Expires: time.Now().Add(30 * 24 * time.Hour),
+			Path:    "/",
+		})
 
 		// client := oauthConfig.Client(context.Background(), token)
 		// srv, err := calendar.New(client)
