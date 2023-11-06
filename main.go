@@ -57,7 +57,7 @@ func main() {
 
 	r.Get("/auth/callback", func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
-		token, err := oauthConfig.Exchange(context.Background(), code)
+		token, err := oauthConfig.Exchange(r.Context(), code)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
