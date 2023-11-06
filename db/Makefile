@@ -9,14 +9,14 @@ create:
 drop:
 	psql ${DATABASE_ROOT_URL}/template1 -c "drop database if exists ${PGDATABASE};"
 
-up:
+migrate:
 	~/go/bin/tern migrate -m ./migrations
 	${MAKE} schema
 
-down:
+rollback:
 	~/go/bin/tern migrate -m ./migrations -d -1
 
-reset: drop create up
+reset: drop create migrate
 
 new:
 	~/go/bin/tern new -m ./migrations unnamed

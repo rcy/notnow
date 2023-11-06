@@ -12,9 +12,21 @@ type SchemaVersion struct {
 	Version int32
 }
 
+type Session struct {
+	ID        pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+	UserID    pgtype.UUID
+}
+
 type Token struct {
-	ID         int32
-	Token      []byte
-	SessionKey string
-	Uuid       pgtype.UUID
+	ID        pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+	Token     []byte
+	UserID    pgtype.UUID
+}
+
+type User struct {
+	ID        pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+	Email     string
 }
