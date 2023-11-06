@@ -1,0 +1,8 @@
+services:
+  postgres:
+    image: postgres:15 
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: hackme
+    ports:
+      - 54322:5432
