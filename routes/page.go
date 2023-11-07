@@ -30,6 +30,7 @@ func Page(w http.ResponseWriter, r *http.Request) {
 	events, err := google.Events(ctx, client)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	queries := yikes.New(db.Conn)
