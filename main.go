@@ -48,19 +48,7 @@ func main() {
 		r.Use(ymw.User)
 		r.Use(ymw.Client)
 
-		r.Get("/user", func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			user, ok := ymw.UserFromContext(ctx)
-			if !ok {
-				http.Error(w, "couldn't get user", http.StatusInternalServerError)
-				return
-			}
-
-			s, err := user.ID.Value()
-			log.Print(s, err)
-		})
-
-		r.Get("/cal", func(w http.ResponseWriter, r *http.Request) {
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			client, ok := ymw.ClientFromContext(ctx)
 			if !ok {
