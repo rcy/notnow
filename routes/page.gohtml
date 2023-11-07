@@ -4,12 +4,12 @@
       {{template "tasks/section" .Tasks}}
     </div>
     <div class="w-full">
-      {{template "events" .Events}}
+      {{template "events/section" .Events}}
     </div>
   </div>
 {{end}}
 
-{{define "events"}}
+{{define "events/section"}}
   {{range .}}
     <div>
       {{.Start.DateTime}}-{{.End.DateTime}}
