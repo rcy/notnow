@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 	"time"
-	"yikes/config"
 	"yikes/db/yikes"
+	"yikes/services/google"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -16,7 +16,7 @@ import (
 
 func Router(r chi.Router) {
 	r.Get("/auth", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, config.GoogleOAuth2.AuthCodeURL("", oauth2.AccessTypeOffline, oauth2.ApprovalForce), http.StatusFound)
+		http.Redirect(w, r, google.Config.AuthCodeURL("", oauth2.AccessTypeOffline, oauth2.ApprovalForce), http.StatusFound)
 	})
 
 	r.Get("/auth/callback", func(w http.ResponseWriter, r *http.Request) {
@@ -29,13 +29,13 @@ func Router(r chi.Router) {
 		queries := yikes.New(conn)
 
 		code := r.URL.Query().Get("code")
-		token, err := config.GoogleOAuth2.Exchange(ctx, code)
+		token, err := google.Config.Exchange(ctx, code)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		client := config.GoogleOAuth2.Client(ctx, token)
+		client := google.Config.Client(ctx, token)
 
 		resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 		if err != nil {

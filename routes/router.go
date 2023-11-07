@@ -14,7 +14,6 @@ func Router(r chi.Router) {
 
 	r.Group(func(r chi.Router) {
 		r.Use(mw.User)
-		r.Use(mw.Client)
 		r.Get("/", Page)
 		r.Route("/tasks", tasks.Router)
 	})

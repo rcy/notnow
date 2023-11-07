@@ -1,4 +1,4 @@
-package config
+package google
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var GoogleOAuth2 = oauth2.Config{
+var Config = oauth2.Config{
 	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 	Endpoint: oauth2.Endpoint{

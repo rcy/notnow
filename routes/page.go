@@ -10,6 +10,7 @@ import (
 	"yikes/layout"
 	mw "yikes/middleware"
 	"yikes/routes/tasks"
+	"yikes/services/google"
 
 	"google.golang.org/api/calendar/v3"
 )
@@ -22,8 +23,9 @@ var (
 
 func Page(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	client, ok := mw.ClientFromContext(ctx)
-	if !ok {
+	user, _ := mw.UserFromContext(ctx)
+	client, err := google.ClientForUser(ctx, user.ID)
+	if err != nil {
 		http.Error(w, "couldn't get client", http.StatusInternalServerError)
 		return
 	}
@@ -46,8 +48,6 @@ func Page(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	user, _ := mw.UserFromContext(ctx)
 
 	queries := yikes.New(db.Conn)
 	tasks, err := queries.FindTasksByUserID(ctx, user.ID)
