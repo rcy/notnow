@@ -10,8 +10,6 @@ import (
 	mw "yikes/middleware"
 	"yikes/routes/tasks"
 	"yikes/services/google"
-
-	"google.golang.org/api/calendar/v3"
 )
 
 var (
@@ -42,10 +40,10 @@ func Page(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = pageTemplate.Execute(w, struct {
-		Events []*calendar.Event
+		Events []google.Event
 		Tasks  []yikes.Task
 	}{
-		Events: events.Items,
+		Events: events,
 		Tasks:  tasks,
 	})
 	if err != nil {

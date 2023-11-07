@@ -8,13 +8,17 @@ import (
 	"google.golang.org/api/calendar/v3"
 )
 
-func Events(ctx context.Context, client *http.Client) (*calendar.Events, error) {
+type Event struct {
+	calendar.Event
+}
+
+func Events(ctx context.Context, client *http.Client) ([]Event, error) {
 	srv, err := calendar.New(client)
 	if err != nil {
 		return nil, err
 	}
 
-	events, err := srv.Events.
+	gevents, err := srv.Events.
 		List("primary").
 		TimeMin(time.Now().Format(time.RFC3339)).
 		TimeMax(time.Now().Add(365 * 24 * time.Hour).Format(time.RFC3339)).
@@ -24,6 +28,11 @@ func Events(ctx context.Context, client *http.Client) (*calendar.Events, error) 
 		Do()
 	if err != nil {
 		return nil, err
+	}
+
+	events := []Event{}
+	for _, it := range gevents.Items {
+		events = append(events, Event{*it})
 	}
 
 	return events, nil
