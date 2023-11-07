@@ -25,3 +25,36 @@
     </div>
   {{end}}
 {{end}}
+
+{{define "events/section/grouped"}}
+  <div class="flex flex-col ">
+    {{range $day := .Keys}}
+      <div class="flex gap-6 border-b border-gray-500 py-4">
+
+        <div class="flex gap-2 w-24 justify-between">
+          <div>
+            {{weekday $day}}
+          </div>
+          <div class="font-bold">
+            {{month $day}} {{day $day}}
+          </div>
+        </div>
+
+        <div>
+          {{range $events := (index $.Events $day)}}
+            <div class="flex gap-4">
+              <div>
+                {{if .StartTime}}
+                  {{.StartTime}}-{{.EndTime}}
+                {{else}}
+                  All day
+                {{end}}
+              </div>
+              <div>{{.Summary}}</div>
+            </div>
+          {{end}}
+        </div>
+      </div>
+    {{end}}
+  </div>
+{{end}}

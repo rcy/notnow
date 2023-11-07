@@ -16,19 +16,14 @@ import (
 var (
 	//go:embed page.gohtml
 	pageContent  string
-	pageTemplate = template.Must(template.New("mainpage").Parse(layout.Content + pageContent + events.Content + tasks.Content))
+	pageTemplate = template.Must(template.New("mainpage").Funcs(events.Funcs).Parse(layout.Content + pageContent + events.Content + tasks.Content))
 )
 
 func Page(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user, _ := mw.UserFromContext(ctx)
-	client, err := google.ClientForUser(ctx, user.ID)
-	if err != nil {
-		http.Error(w, "couldn't get client", http.StatusInternalServerError)
-		return
-	}
 
-	events, err := google.Events(ctx, client)
+	groupedEvents, err := google.UserEventsGroupedByDay(ctx, user.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -42,11 +37,11 @@ func Page(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = pageTemplate.Execute(w, struct {
-		Events []google.Event
-		Tasks  []yikes.Task
+		GroupedEvents google.TimeGrouping
+		Tasks         []yikes.Task
 	}{
-		Events: events,
-		Tasks:  tasks,
+		GroupedEvents: *groupedEvents,
+		Tasks:         tasks,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
