@@ -1,38 +1,10 @@
 {{define "main"}}
   <div class="flex">
     <div class="w-full">
-      {{template "events/section" .Events}}
-    </div>
-    <div class="w-full">
       {{template "tasks/section" .Tasks}}
     </div>
-  </div>
-{{end}}
-
-{{define "events/section"}}
-  {{range .}}
-    <div class="flex">
-      {{if .RecurringEventId}}
-        {{if .AllDay}}
-          <div class="bg-orange-900">
-            {{.StartAt}} {{.Duration}} {{.Summary}}
-          </div>
-        {{else}}
-          <div class="bg-black">
-            {{.StartAt}} {{.Duration}} {{.Summary}}
-          </div>
-        {{end}}
-      {{else}}
-        {{if .AllDay}}
-          <div class="bg-red-900">
-            {{.StartAt}} {{.Duration}} {{.Summary}}
-          </div>
-        {{else}}
-          <div class="bg-blue-900">
-            {{.StartAt}} {{.Duration}} {{.Summary}}
-          </div>
-        {{end}}
-      {{end}}
+    <div class="w-full">
+      {{template "events/section" .Events}}
     </div>
-  {{end}}
+  </div>
 {{end}}

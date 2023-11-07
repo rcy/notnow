@@ -8,6 +8,7 @@ import (
 	"yikes/db/yikes"
 	"yikes/layout"
 	mw "yikes/middleware"
+	"yikes/routes/events"
 	"yikes/routes/tasks"
 	"yikes/services/google"
 )
@@ -15,7 +16,7 @@ import (
 var (
 	//go:embed page.gohtml
 	pageContent  string
-	pageTemplate = template.Must(template.New("mainpage").Parse(layout.Content + pageContent + tasks.Content))
+	pageTemplate = template.Must(template.New("mainpage").Parse(layout.Content + pageContent + events.Content + tasks.Content))
 )
 
 func Page(w http.ResponseWriter, r *http.Request) {
