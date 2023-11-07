@@ -12,6 +12,32 @@ type Event struct {
 	calendar.Event
 }
 
+func (e *Event) AllDay() bool {
+	return e.Start.DateTime == ""
+}
+
+func (e *Event) StartAt() time.Time {
+	if e.Start.DateTime == "" {
+		t, _ := time.Parse(time.DateOnly, e.Start.Date)
+		return t
+	}
+	t, _ := time.Parse(time.RFC3339Nano, e.Start.DateTime)
+	return t
+}
+
+func (e *Event) EndAt() time.Time {
+	if e.End.DateTime == "" {
+		t, _ := time.Parse(time.DateOnly, e.End.Date)
+		return t
+	}
+	t, _ := time.Parse(time.RFC3339Nano, e.End.DateTime)
+	return t
+}
+
+func (e *Event) Duration() time.Duration {
+	return e.EndAt().Sub(e.StartAt())
+}
+
 func Events(ctx context.Context, client *http.Client) ([]Event, error) {
 	srv, err := calendar.New(client)
 	if err != nil {

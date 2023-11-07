@@ -11,9 +11,14 @@
 
 {{define "events/section"}}
   {{range .}}
-    <div>
-      {{.Start.DateTime}}-{{.End.DateTime}}
-      {{.Summary}}
-    </div>
+    {{if .AllDay}}
+      <div class="bg-red-900">
+        {{.StartAt}} {{.Duration}} {{.Summary}}
+      </div>
+    {{else}}
+      <div class="bg-blue-900">
+        {{.StartAt}} {{.Duration}} {{.Summary}}
+      </div>
+    {{end}}
   {{end}}
 {{end}}
