@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"html/template"
 	"net/http"
-	"time"
 	"yikes/db"
 	"yikes/db/yikes"
 	"yikes/layout"
@@ -30,23 +29,9 @@ func Page(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	srv, err := calendar.New(client)
+	events, err := google.Events(ctx, client)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	events, err := srv.Events.
-		List("primary").
-		TimeMin(time.Now().Format(time.RFC3339)).
-		TimeMax(time.Now().Add(365 * 24 * time.Hour).Format(time.RFC3339)).
-		SingleEvents(true).
-		OrderBy("startTime").
-		Context(ctx).
-		Do()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 
 	queries := yikes.New(db.Conn)
