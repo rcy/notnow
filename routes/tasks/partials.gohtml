@@ -1,0 +1,22 @@
+{{define "tasks/section"}}
+  <section>
+    {{template "tasks/form"}}
+    {{template "tasks/list" .}}
+  </section>
+{{end}}
+
+{{define "tasks/form"}}
+  <form hx-post="tasks" hx-target="closest section">
+    <input class="w-full shadow bg-black" type="text" name="summary">
+  </form>
+{{end}}
+
+{{define "tasks/list"}}
+  <div>
+    {{range .}}
+      <div>
+        {{.Summary}}
+      </div>
+    {{end}}
+  </div>
+{{end}}

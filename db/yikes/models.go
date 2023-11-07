@@ -18,6 +18,13 @@ type Session struct {
 	UserID    pgtype.UUID
 }
 
+type Task struct {
+	ID        pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+	UserID    pgtype.UUID
+	Summary   string
+}
+
 type Token struct {
 	ID        pgtype.UUID
 	CreatedAt pgtype.Timestamptz

@@ -22,6 +22,40 @@ func (q *Queries) CreateSession(ctx context.Context, userID pgtype.UUID) (pgtype
 	return id, err
 }
 
+const createTask = `-- name: CreateTask :many
+insert into tasks(summary, user_id) values($1, $2) returning id, created_at, user_id, summary
+`
+
+type CreateTaskParams struct {
+	Summary string
+	UserID  pgtype.UUID
+}
+
+func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) ([]Task, error) {
+	rows, err := q.db.Query(ctx, createTask, arg.Summary, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UserID,
+			&i.Summary,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createToken = `-- name: CreateToken :one
 insert into tokens(token, user_id) values($1, $2) returning id
 `
@@ -47,6 +81,35 @@ func (q *Queries) CreateUser(ctx context.Context, email string) (User, error) {
 	var i User
 	err := row.Scan(&i.ID, &i.CreatedAt, &i.Email)
 	return i, err
+}
+
+const findTasksByUserID = `-- name: FindTasksByUserID :many
+select id, created_at, user_id, summary from tasks where user_id = $1 order by created_at desc limit 1000
+`
+
+func (q *Queries) FindTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]Task, error) {
+	rows, err := q.db.Query(ctx, findTasksByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UserID,
+			&i.Summary,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const findTokenByUserID = `-- name: FindTokenByUserID :one

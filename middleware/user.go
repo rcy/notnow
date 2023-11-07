@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"yikes/config"
+	"yikes/db"
 	"yikes/db/yikes"
 
 	"github.com/jackc/pgx/v5"
@@ -16,13 +17,8 @@ import (
 func User(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		conn, ok := ctx.Value("conn").(*pgx.Conn)
-		if !ok {
-			http.Error(w, "couldn't get conn", http.StatusInternalServerError)
-			return
-		}
 
-		queries := yikes.New(conn)
+		queries := yikes.New(db.Conn)
 
 		cookie, err := r.Cookie("yikes.session")
 		if err != nil {
@@ -58,18 +54,9 @@ func Client(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		conn, ok := ctx.Value("conn").(*pgx.Conn)
-		if !ok {
-			http.Error(w, "Client: couldn't get conn", http.StatusInternalServerError)
-			return
-		}
-		user, ok := ctx.Value("user").(yikes.User)
-		if !ok {
-			http.Error(w, "Client: couldn't get user", http.StatusInternalServerError)
-			return
-		}
+		user, _ := UserFromContext(ctx)
 
-		queries := yikes.New(conn)
+		queries := yikes.New(db.Conn)
 
 		token, err := queries.FindTokenByUserID(ctx, user.ID)
 		if err != nil {

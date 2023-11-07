@@ -1,8 +1,19 @@
-{{range .Events}}
-  <div>
-    {{.Start.DateTime}}-{{.End.DateTime}}
-    {{.Summary}}
+{{define "main"}}
+  <div class="flex">
+    <div class="w-full">
+      {{template "tasks/section" .Tasks}}
+    </div>
+    <div class="w-full">
+      {{template "events" .Events}}
+    </div>
   </div>
 {{end}}
 
-
+{{define "events"}}
+  {{range .}}
+    <div>
+      {{.Start.DateTime}}-{{.End.DateTime}}
+      {{.Summary}}
+    </div>
+  {{end}}
+{{end}}
