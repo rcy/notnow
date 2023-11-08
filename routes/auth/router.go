@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"time"
+	"yikes/db"
 	"yikes/db/yikes"
 	"yikes/services/google"
 
@@ -15,18 +16,13 @@ import (
 )
 
 func Router(r chi.Router) {
-	r.Get("/auth", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, google.Config.AuthCodeURL("", oauth2.AccessTypeOffline, oauth2.ApprovalForce), http.StatusFound)
 	})
 
-	r.Get("/auth/callback", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/callback", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		conn, ok := ctx.Value("conn").(*pgx.Conn)
-		if !ok {
-			http.Error(w, "Client: couldn't get conn", http.StatusInternalServerError)
-			return
-		}
-		queries := yikes.New(conn)
+		queries := yikes.New(db.Conn)
 
 		code := r.URL.Query().Get("code")
 		token, err := google.Config.Exchange(ctx, code)
