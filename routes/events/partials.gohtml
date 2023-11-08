@@ -1,33 +1,9 @@
-{{define "events/section"}}
-  {{range .}}
-    <div class="flex">
-      {{if .RecurringEventId}}
-        {{if .AllDay}}
-          <div class="bg-orange-900">
-            {{.StartAt}} {{.Duration}} {{.Summary}}
-          </div>
-        {{else}}
-          <div class="bg-black">
-            {{.StartAt}} {{.Duration}} {{.Summary}}
-          </div>
-        {{end}}
-      {{else}}
-        {{if .AllDay}}
-          <div class="bg-red-900">
-            {{.StartAt}} {{.Duration}} {{.Summary}}
-          </div>
-        {{else}}
-          <div class="bg-blue-900">
-            {{.StartAt}} {{.Duration}} {{.Summary}}
-          </div>
-        {{end}}
-      {{end}}
-    </div>
-  {{end}}
-{{end}}
-
 {{define "events/section/grouped"}}
-  <div class="flex flex-col ">
+  <div id="events"
+       class="flex flex-col"
+       hx-trigger="calendarUpdated from:body"
+       hx-get="/"
+       hx-select="#events">
     {{range $day := .Keys}}
       <div class="flex gap-6 border-b border-gray-500 py-4">
 

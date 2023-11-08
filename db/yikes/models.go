@@ -25,6 +25,14 @@ type Task struct {
 	Summary   string
 }
 
+type TaskEvent struct {
+	ID        pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+	UserID    pgtype.UUID
+	TaskID    pgtype.UUID
+	EventID   string
+}
+
 type Token struct {
 	ID        pgtype.UUID
 	CreatedAt pgtype.Timestamptz

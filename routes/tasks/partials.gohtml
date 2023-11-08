@@ -15,7 +15,10 @@
   <div>
     {{range .}}
       <div>
-        {{.Summary}}
+        <a href="#"
+           hx-post="/tasks/{{.ID|str}}/schedule"
+           class="hover:bg-red-800"
+        >{{.Summary}}</a>
       </div>
     {{end}}
   </div>

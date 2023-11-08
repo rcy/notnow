@@ -45,6 +45,21 @@ CREATE TABLE public.sessions (
 ALTER TABLE public.sessions OWNER TO postgres;
 
 --
+-- Name: task_events; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.task_events (
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_id uuid NOT NULL,
+    task_id uuid NOT NULL,
+    event_id text NOT NULL
+);
+
+
+ALTER TABLE public.task_events OWNER TO postgres;
+
+--
 -- Name: tasks; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -95,6 +110,14 @@ ALTER TABLE ONLY public.sessions
 
 
 --
+-- Name: task_events task_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.task_events
+    ADD CONSTRAINT task_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: tasks tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -132,6 +155,22 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.sessions
     ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: task_events task_events_task_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.task_events
+    ADD CONSTRAINT task_events_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.tasks(id);
+
+
+--
+-- Name: task_events task_events_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.task_events
+    ADD CONSTRAINT task_events_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --

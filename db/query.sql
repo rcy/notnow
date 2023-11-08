@@ -19,5 +19,11 @@ select users.* from sessions join users on sessions.user_id = users.id where ses
 -- name: FindTasksByUserID :many
 select * from tasks where user_id = $1 order by created_at desc limit 1000;
 
+-- name: UserTaskByID :one
+select * from tasks where user_id = $1 and id = $2;
+
 -- name: CreateTask :one
 insert into tasks(summary, user_id) values($1, $2) returning *;
+
+-- name: CreateUserTaskEvent :one
+insert into task_events(user_id, task_id, event_id) values($1, $2, $3) returning *;

@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"html/template"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var (
@@ -24,5 +26,17 @@ var (
 			tstr, _ := time.Parse(time.DateOnly, date)
 			return tstr.Format("2")
 		},
+		"str": func(uuid pgtype.UUID) string {
+			return StringUUID(uuid)
+		},
 	}
 )
+
+func StringUUID(uuid pgtype.UUID) string {
+	value, err := uuid.Value()
+	if err != nil {
+		return ""
+	}
+	str, _ := value.(string)
+	return str
+}

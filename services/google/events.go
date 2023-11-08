@@ -2,9 +2,9 @@ package google
 
 import (
 	"context"
-	"net/http"
 	"sort"
 	"time"
+	"yikes/db/yikes"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/api/calendar/v3"
@@ -61,16 +61,11 @@ func (e *Event) Duration() time.Duration {
 	return e.EndAt().Sub(e.StartAt())
 }
 
-func clientEvents(ctx context.Context, client *http.Client) ([]Event, error) {
-	srv, err := calendar.New(client)
-	if err != nil {
-		return nil, err
-	}
-
+func fetchEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
 	gevents, err := srv.Events.
 		List("primary").
 		TimeMin(time.Now().Format(time.RFC3339)).
-		TimeMax(time.Now().Add(365 * 24 * time.Hour).Format(time.RFC3339)).
+		TimeMax(time.Now().Add(28 * 24 * time.Hour).Format(time.RFC3339)).
 		SingleEvents(true).
 		OrderBy("startTime").
 		Context(ctx).
@@ -88,12 +83,12 @@ func clientEvents(ctx context.Context, client *http.Client) ([]Event, error) {
 }
 
 func UserEvents(ctx context.Context, userID pgtype.UUID) ([]Event, error) {
-	client, err := ClientForUser(ctx, userID)
+	srv, err := ServiceForUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	return clientEvents(ctx, client)
+	return fetchEvents(ctx, srv)
 }
 
 type TimeGrouping struct {
@@ -127,4 +122,49 @@ func UserEventsGroupedByDay(ctx context.Context, userID pgtype.UUID) (*TimeGroup
 	})
 
 	return &tg, nil
+}
+
+func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, task yikes.Task) (*calendar.Event, error) {
+	srv, err := ServiceForUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	dur := time.Hour
+	startAt, err := findNextAvailableTime(ctx, srv, dur)
+	if err != nil {
+		return nil, err
+	}
+
+	event := calendar.Event{
+		Summary:     "TASK " + task.Summary,
+		Description: "--- yikes created event ---",
+		Start: &calendar.EventDateTime{
+			DateTime: startAt.Format(time.RFC3339),
+		},
+		End: &calendar.EventDateTime{
+			DateTime: startAt.Add(dur).Format(time.RFC3339),
+		},
+	}
+
+	return srv.Events.Insert("primary", &event).Do()
+}
+
+func findNextAvailableTime(ctx context.Context, srv *calendar.Service, dur time.Duration) (*time.Time, error) {
+	events, err := fetchEvents(ctx, srv)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
+	for _, event := range events {
+		if now.Before(event.StartAt()) {
+			// we are in a window of free time
+			if event.StartAt().Sub(now) < dur {
+				continue
+			}
+			return &now, nil
+		}
+		now = event.EndAt()
+	}
+	return &now, nil
 }

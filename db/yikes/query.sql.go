@@ -22,7 +22,7 @@ func (q *Queries) CreateSession(ctx context.Context, userID pgtype.UUID) (pgtype
 	return id, err
 }
 
-const createTask = `-- name: CreateTask :many
+const createTask = `-- name: CreateTask :one
 insert into tasks(summary, user_id) values($1, $2) returning id, created_at, user_id, summary
 `
 
@@ -31,29 +31,16 @@ type CreateTaskParams struct {
 	UserID  pgtype.UUID
 }
 
-func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) ([]Task, error) {
-	rows, err := q.db.Query(ctx, createTask, arg.Summary, arg.UserID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Task
-	for rows.Next() {
-		var i Task
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.UserID,
-			&i.Summary,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
+	row := q.db.QueryRow(ctx, createTask, arg.Summary, arg.UserID)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.Summary,
+	)
+	return i, err
 }
 
 const createToken = `-- name: CreateToken :one
@@ -80,6 +67,29 @@ func (q *Queries) CreateUser(ctx context.Context, email string) (User, error) {
 	row := q.db.QueryRow(ctx, createUser, email)
 	var i User
 	err := row.Scan(&i.ID, &i.CreatedAt, &i.Email)
+	return i, err
+}
+
+const createUserTaskEvent = `-- name: CreateUserTaskEvent :one
+insert into task_events(user_id, task_id, event_id) values($1, $2, $3) returning id, created_at, user_id, task_id, event_id
+`
+
+type CreateUserTaskEventParams struct {
+	UserID  pgtype.UUID
+	TaskID  pgtype.UUID
+	EventID string
+}
+
+func (q *Queries) CreateUserTaskEvent(ctx context.Context, arg CreateUserTaskEventParams) (TaskEvent, error) {
+	row := q.db.QueryRow(ctx, createUserTaskEvent, arg.UserID, arg.TaskID, arg.EventID)
+	var i TaskEvent
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.TaskID,
+		&i.EventID,
+	)
 	return i, err
 }
 
@@ -147,5 +157,26 @@ func (q *Queries) FindUserBySessionID(ctx context.Context, id pgtype.UUID) (User
 	row := q.db.QueryRow(ctx, findUserBySessionID, id)
 	var i User
 	err := row.Scan(&i.ID, &i.CreatedAt, &i.Email)
+	return i, err
+}
+
+const userTaskByID = `-- name: UserTaskByID :one
+select id, created_at, user_id, summary from tasks where user_id = $1 and id = $2
+`
+
+type UserTaskByIDParams struct {
+	UserID pgtype.UUID
+	ID     pgtype.UUID
+}
+
+func (q *Queries) UserTaskByID(ctx context.Context, arg UserTaskByIDParams) (Task, error) {
+	row := q.db.QueryRow(ctx, userTaskByID, arg.UserID, arg.ID)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.Summary,
+	)
 	return i, err
 }
