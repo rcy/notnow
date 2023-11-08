@@ -145,9 +145,23 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, task yikes.Task) (
 		End: &calendar.EventDateTime{
 			DateTime: startAt.Add(dur).Format(time.RFC3339),
 		},
+		ExtendedProperties: &calendar.EventExtendedProperties{
+			Private: map[string]string{
+				"yikes": UUIDString(task.ID),
+			},
+		},
 	}
 
 	return srv.Events.Insert("primary", &event).Do()
+}
+
+func UUIDString(uuid pgtype.UUID) string {
+	value, err := uuid.Value()
+	if err != nil {
+		return ""
+	}
+	str, _ := value.(string)
+	return str
 }
 
 func findNextAvailableTime(ctx context.Context, srv *calendar.Service, dur time.Duration) (*time.Time, error) {
