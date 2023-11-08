@@ -38,7 +38,7 @@ func post(w http.ResponseWriter, r *http.Request) {
 	user, _ := middleware.UserFromContext(ctx)
 
 	queries := yikes.New(db.Conn)
-	_, err := queries.CreateTask(ctx, yikes.CreateTaskParams{
+	task, err := queries.CreateTask(ctx, yikes.CreateTaskParams{
 		Summary: summary,
 		UserID:  user.ID,
 	})
@@ -47,14 +47,22 @@ func post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks, err := queries.FindTasksByUserID(ctx, user.ID)
-
+	err = scheduleTask(ctx, user.ID, task.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	partials.ExecuteTemplate(w, "tasks/section", tasks)
+	// tasks, err := queries.FindTasksByUserID(ctx, user.ID)
+
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+
+	w.Header().Add("HX-Trigger", "calendarUpdated")
+
+	partials.ExecuteTemplate(w, "tasks/section", nil)
 }
 
 func postSchedule(w http.ResponseWriter, r *http.Request) {
