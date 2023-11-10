@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"time"
+	"yikes/db"
 	"yikes/db/yikes"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -151,8 +152,7 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, task yikes.Task) (
 		return nil, err
 	}
 
-	dur := time.Hour
-	startAt, err := findNextAvailableTime(ctx, srv, dur)
+	startAt, err := findNextAvailableTime(ctx, srv, task.Duration())
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, task yikes.Task) (
 			DateTime: startAt.Format(time.RFC3339),
 		},
 		End: &calendar.EventDateTime{
-			DateTime: startAt.Add(dur).Format(time.RFC3339),
+			DateTime: startAt.Add(task.Duration()).Format(time.RFC3339),
 		},
 		ExtendedProperties: &calendar.EventExtendedProperties{
 			Private: map[string]string{
@@ -220,7 +220,7 @@ func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {
 		return err
 	}
 
-	//queries := yikes.New(db.Conn)
+	queries := yikes.New(db.Conn)
 
 	for _, ev := range events {
 		if ev.ExtendedProperties != nil {
@@ -228,19 +228,18 @@ func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {
 			if str == "" {
 				continue
 			}
-			// taskID := StringUUID(str)
-			// task, err := queries.UserTaskByID(ctx, yikes.UserTaskByIDParams{UserID: userID, ID: taskID})
-			// if err != nil {
-			// 	return err
-			// }
+			taskID := StringUUID(str)
+			task, err := queries.UserTaskByID(ctx, yikes.UserTaskByIDParams{UserID: userID, ID: taskID})
+			if err != nil {
+				return err
+			}
 
-			dur := time.Hour // TODO: task.Duration
-			startAt, err := findNextAvailableTime(ctx, srv, dur)
+			startAt, err := findNextAvailableTime(ctx, srv, task.Duration())
 			if err != nil {
 				return err
 			}
 			ev.Start.DateTime = startAt.Format(time.RFC3339)
-			ev.End.DateTime = startAt.Add(dur).Format(time.RFC3339)
+			ev.End.DateTime = startAt.Add(task.Duration()).Format(time.RFC3339)
 			_, err = srv.Events.Update("primary", ev.Id, &ev.Event).Do()
 			if err != nil {
 				return err
