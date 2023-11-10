@@ -61,7 +61,7 @@ func (e *Event) Duration() time.Duration {
 	return e.EndAt().Sub(e.StartAt())
 }
 
-func fetchEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
+func fetchFutureEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
 	gevents, err := srv.Events.
 		List("primary").
 		TimeMin(time.Now().Format(time.RFC3339)).
@@ -109,7 +109,7 @@ func UserEvents(ctx context.Context, userID pgtype.UUID) ([]Event, error) {
 		return nil, err
 	}
 
-	return fetchEvents(ctx, srv)
+	return fetchFutureEvents(ctx, srv)
 }
 
 type TimeGrouping struct {
@@ -192,7 +192,7 @@ func StringUUID(str string) pgtype.UUID {
 }
 
 func findNextAvailableTime(ctx context.Context, srv *calendar.Service, dur time.Duration) (*time.Time, error) {
-	events, err := fetchEvents(ctx, srv)
+	events, err := fetchFutureEvents(ctx, srv)
 	if err != nil {
 		return nil, err
 	}
