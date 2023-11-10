@@ -11,6 +11,10 @@ import (
 	"google.golang.org/api/calendar/v3"
 )
 
+const (
+	taskPrefix = "."
+)
+
 type Event struct {
 	calendar.Event
 }
@@ -158,7 +162,7 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, task yikes.Task) (
 	}
 
 	event := calendar.Event{
-		Summary:     "TASK " + task.Summary,
+		Summary:     taskPrefix + task.Summary,
 		Description: "--- yikes created event ---",
 		Start: &calendar.EventDateTime{
 			DateTime: startAt.Format(time.RFC3339),
