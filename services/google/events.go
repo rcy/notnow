@@ -66,7 +66,12 @@ func (e *Event) Duration() time.Duration {
 	return e.EndAt().Sub(e.StartAt())
 }
 
-func fetchFutureEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
+type fetchEventsParam struct {
+	StartAt time.Time
+	EndAt   time.Time
+}
+
+func fetchEvents(ctx context.Context, srv *calendar.Service, param fetchEventsParam) ([]Event, error) {
 	gevents, err := srv.Events.
 		List("primary").
 		TimeMin(time.Now().Format(time.RFC3339)).
@@ -87,25 +92,18 @@ func fetchFutureEvents(ctx context.Context, srv *calendar.Service) ([]Event, err
 	return events, nil
 }
 
+func fetchFutureEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
+	return fetchEvents(ctx, srv, fetchEventsParam{
+		StartAt: time.Now(),
+		EndAt:   time.Now().Add(28 * 24 * time.Hour),
+	})
+}
+
 func fetchPastEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
-	gevents, err := srv.Events.
-		List("primary").
-		TimeMax(time.Now().Format(time.RFC3339)).
-		TimeMin(time.Now().Add(-28 * 24 * time.Hour).Format(time.RFC3339)).
-		SingleEvents(true).
-		OrderBy("startTime").
-		Context(ctx).
-		Do()
-	if err != nil {
-		return nil, err
-	}
-
-	events := []Event{}
-	for _, it := range gevents.Items {
-		events = append(events, Event{*it})
-	}
-
-	return events, nil
+	return fetchEvents(ctx, srv, fetchEventsParam{
+		StartAt: time.Now().Add(-28 * 24 * time.Hour),
+		EndAt:   time.Now(),
+	})
 }
 
 func UserEvents(ctx context.Context, userID pgtype.UUID) ([]Event, error) {
