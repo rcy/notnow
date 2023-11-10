@@ -93,6 +93,25 @@ func (q *Queries) CreateUserTaskEvent(ctx context.Context, arg CreateUserTaskEve
 	return i, err
 }
 
+const findTaskByEventID = `-- name: FindTaskByEventID :one
+select tasks.id, tasks.created_at, tasks.user_id, tasks.summary from tasks
+join task_events on tasks.id = task_events.task_id
+where task_events.event_id = $1
+limit 1
+`
+
+func (q *Queries) FindTaskByEventID(ctx context.Context, eventID string) (Task, error) {
+	row := q.db.QueryRow(ctx, findTaskByEventID, eventID)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.Summary,
+	)
+	return i, err
+}
+
 const findTasksByUserID = `-- name: FindTasksByUserID :many
 select id, created_at, user_id, summary from tasks where user_id = $1 order by created_at desc limit 1000
 `

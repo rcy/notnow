@@ -2,11 +2,14 @@ package google
 
 import (
 	"context"
+	"log"
 	"sort"
+	"strings"
 	"time"
 	"yikes/db"
 	"yikes/db/yikes"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/api/calendar/v3"
 )
@@ -67,15 +70,15 @@ func (e *Event) Duration() time.Duration {
 }
 
 type fetchEventsParam struct {
-	StartAt time.Time
-	EndAt   time.Time
+	Min time.Time
+	Max time.Time
 }
 
 func fetchEvents(ctx context.Context, srv *calendar.Service, param fetchEventsParam) ([]Event, error) {
 	gevents, err := srv.Events.
 		List("primary").
-		TimeMin(time.Now().Format(time.RFC3339)).
-		TimeMax(time.Now().Add(28 * 24 * time.Hour).Format(time.RFC3339)).
+		TimeMin(param.Min.Format(time.RFC3339)).
+		TimeMax(param.Max.Format(time.RFC3339)).
 		SingleEvents(true).
 		OrderBy("startTime").
 		Context(ctx).
@@ -94,15 +97,22 @@ func fetchEvents(ctx context.Context, srv *calendar.Service, param fetchEventsPa
 
 func fetchFutureEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
 	return fetchEvents(ctx, srv, fetchEventsParam{
-		StartAt: time.Now(),
-		EndAt:   time.Now().Add(28 * 24 * time.Hour),
+		Min: time.Now(),
+		Max: time.Now().Add(28 * 24 * time.Hour),
 	})
 }
 
 func fetchPastEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
 	return fetchEvents(ctx, srv, fetchEventsParam{
-		StartAt: time.Now().Add(-28 * 24 * time.Hour),
-		EndAt:   time.Now(),
+		Min: time.Now().Add(-28 * 24 * time.Hour),
+		Max: time.Now(),
+	})
+}
+
+func fetchAllEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
+	return fetchEvents(ctx, srv, fetchEventsParam{
+		Min: time.Now().Add(-28 * 24 * time.Hour),
+		Max: time.Now().Add(28 * 24 * time.Hour),
 	})
 }
 
@@ -225,28 +235,82 @@ func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {
 	queries := yikes.New(db.Conn)
 
 	for _, ev := range events {
-		if ev.ExtendedProperties != nil {
-			str := ev.ExtendedProperties.Private["yikes"]
-			if str == "" {
+		task, err := queries.FindTaskByEventID(ctx, ev.Id)
+		if err != nil {
+			if err == pgx.ErrNoRows {
 				continue
 			}
-			taskID := StringUUID(str)
-			task, err := queries.UserTaskByID(ctx, yikes.UserTaskByIDParams{UserID: userID, ID: taskID})
-			if err != nil {
-				return err
-			}
+			return err
+		}
 
-			startAt, err := findNextAvailableTime(ctx, srv, task.Duration())
-			if err != nil {
-				return err
-			}
-			ev.Start.DateTime = startAt.Format(time.RFC3339)
-			ev.End.DateTime = startAt.Add(task.Duration()).Format(time.RFC3339)
-			_, err = srv.Events.Update("primary", ev.Id, &ev.Event).Do()
-			if err != nil {
-				return err
-			}
+		startAt, err := findNextAvailableTime(ctx, srv, task.Duration())
+		if err != nil {
+			return err
+		}
+		ev.Start.DateTime = startAt.Format(time.RFC3339)
+		ev.End.DateTime = startAt.Add(task.Duration()).Format(time.RFC3339)
+		_, err = srv.Events.Update("primary", ev.Id, &ev.Event).Do()
+		if err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+// Create tasks and add to database for all events that match taskPrefix
+func MakeTasksForEvents(ctx context.Context, userID pgtype.UUID) error {
+	srv, err := ServiceForUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	events, err := fetchAllEvents(ctx, srv)
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.Conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	queries := yikes.New(tx)
+
+	for _, ev := range events {
+		log.Printf("ev: %s", ev.Summary)
+
+		if !strings.HasPrefix(ev.Summary, taskPrefix) {
+			continue
+		}
+
+		_, err := queries.FindTaskByEventID(ctx, ev.Id)
+		if err == nil {
+			// we found a task
+			continue
+		} else {
+			if err != pgx.ErrNoRows {
+				// db error
+				return err
+			}
+		}
+
+		task, err := queries.CreateTask(ctx, yikes.CreateTaskParams{
+			UserID:  userID,
+			Summary: strings.TrimPrefix(ev.Summary, taskPrefix),
+		})
+		if err != nil {
+			return err
+		}
+
+		_, err = queries.CreateUserTaskEvent(ctx, yikes.CreateUserTaskEventParams{
+			UserID:  userID,
+			TaskID:  task.ID,
+			EventID: ev.Id,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
 }

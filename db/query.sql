@@ -19,6 +19,12 @@ select users.* from sessions join users on sessions.user_id = users.id where ses
 -- name: FindTasksByUserID :many
 select * from tasks where user_id = $1 order by created_at desc limit 1000;
 
+-- name: FindTaskByEventID :one
+select tasks.* from tasks
+join task_events on tasks.id = task_events.task_id
+where task_events.event_id = $1
+limit 1;
+
 -- name: UserTaskByID :one
 select * from tasks where user_id = $1 and id = $2;
 

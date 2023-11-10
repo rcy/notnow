@@ -150,6 +150,13 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: idx_task_events_event_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX idx_task_events_event_id ON public.task_events USING btree (event_id);
+
+
+--
 -- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 

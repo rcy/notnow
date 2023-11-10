@@ -1,4 +1,4 @@
-package routes
+package hacks
 
 import (
 	_ "embed"
@@ -7,7 +7,7 @@ import (
 	"yikes/services/google"
 )
 
-func postReschedule(w http.ResponseWriter, r *http.Request) {
+func PostReschedule(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user, _ := mw.UserFromContext(ctx)
 
