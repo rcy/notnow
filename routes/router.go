@@ -15,6 +15,7 @@ func Router(r chi.Router) {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.User)
 		r.Get("/", Page)
+		r.Post("/hacks/reschedule", postReschedule)
 		r.Route("/tasks", tasks.Router)
 	})
 }

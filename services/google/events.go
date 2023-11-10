@@ -82,6 +82,27 @@ func fetchEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
 	return events, nil
 }
 
+func fetchPastEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
+	gevents, err := srv.Events.
+		List("primary").
+		TimeMax(time.Now().Format(time.RFC3339)).
+		TimeMin(time.Now().Add(-28 * 24 * time.Hour).Format(time.RFC3339)).
+		SingleEvents(true).
+		OrderBy("startTime").
+		Context(ctx).
+		Do()
+	if err != nil {
+		return nil, err
+	}
+
+	events := []Event{}
+	for _, it := range gevents.Items {
+		events = append(events, Event{*it})
+	}
+
+	return events, nil
+}
+
 func UserEvents(ctx context.Context, userID pgtype.UUID) ([]Event, error) {
 	srv, err := ServiceForUser(ctx, userID)
 	if err != nil {
@@ -164,6 +185,12 @@ func UUIDString(uuid pgtype.UUID) string {
 	return str
 }
 
+func StringUUID(str string) pgtype.UUID {
+	uuid := pgtype.UUID{}
+	_ = uuid.Scan(str)
+	return uuid
+}
+
 func findNextAvailableTime(ctx context.Context, srv *calendar.Service, dur time.Duration) (*time.Time, error) {
 	events, err := fetchEvents(ctx, srv)
 	if err != nil {
@@ -181,4 +208,44 @@ func findNextAvailableTime(ctx context.Context, srv *calendar.Service, dur time.
 		now = event.EndAt()
 	}
 	return &now, nil
+}
+
+func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {
+	srv, err := ServiceForUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	events, err := fetchPastEvents(ctx, srv)
+	if err != nil {
+		return err
+	}
+
+	//queries := yikes.New(db.Conn)
+
+	for _, ev := range events {
+		if ev.ExtendedProperties != nil {
+			str := ev.ExtendedProperties.Private["yikes"]
+			if str == "" {
+				continue
+			}
+			// taskID := StringUUID(str)
+			// task, err := queries.UserTaskByID(ctx, yikes.UserTaskByIDParams{UserID: userID, ID: taskID})
+			// if err != nil {
+			// 	return err
+			// }
+
+			dur := time.Hour // TODO: task.Duration
+			startAt, err := findNextAvailableTime(ctx, srv, dur)
+			if err != nil {
+				return err
+			}
+			ev.Start.DateTime = startAt.Format(time.RFC3339)
+			ev.End.DateTime = startAt.Add(dur).Format(time.RFC3339)
+			_, err = srv.Events.Update("primary", ev.Id, &ev.Event).Do()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

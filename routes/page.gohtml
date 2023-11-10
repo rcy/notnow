@@ -1,6 +1,7 @@
 {{define "main"}}
   <div class="flex">
     <div class="w-full">
+      <button hx-post="/hacks/reschedule">reschedule</button>
       {{template "tasks/section" .Tasks}}
       {{template "events/section/grouped" .GroupedEvents}}
     </div>
