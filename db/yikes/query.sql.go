@@ -23,7 +23,7 @@ func (q *Queries) CreateSession(ctx context.Context, userID pgtype.UUID) (pgtype
 }
 
 const createTask = `-- name: CreateTask :one
-insert into tasks(summary, user_id) values($1, $2) returning id, created_at, user_id, summary
+insert into tasks(summary, user_id) values($1, $2) returning id, created_at, user_id, summary, status
 `
 
 type CreateTaskParams struct {
@@ -39,6 +39,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.CreatedAt,
 		&i.UserID,
 		&i.Summary,
+		&i.Status,
 	)
 	return i, err
 }
@@ -94,7 +95,7 @@ func (q *Queries) CreateUserTaskEvent(ctx context.Context, arg CreateUserTaskEve
 }
 
 const findTaskByEventID = `-- name: FindTaskByEventID :one
-select tasks.id, tasks.created_at, tasks.user_id, tasks.summary from tasks
+select tasks.id, tasks.created_at, tasks.user_id, tasks.summary, tasks.status from tasks
 join task_events on tasks.id = task_events.task_id
 where task_events.event_id = $1
 limit 1
@@ -108,12 +109,13 @@ func (q *Queries) FindTaskByEventID(ctx context.Context, eventID string) (Task, 
 		&i.CreatedAt,
 		&i.UserID,
 		&i.Summary,
+		&i.Status,
 	)
 	return i, err
 }
 
 const findTasksByUserID = `-- name: FindTasksByUserID :many
-select id, created_at, user_id, summary from tasks where user_id = $1 order by created_at desc limit 1000
+select id, created_at, user_id, summary, status from tasks where user_id = $1 order by created_at desc limit 1000
 `
 
 func (q *Queries) FindTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]Task, error) {
@@ -130,6 +132,7 @@ func (q *Queries) FindTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]
 			&i.CreatedAt,
 			&i.UserID,
 			&i.Summary,
+			&i.Status,
 		); err != nil {
 			return nil, err
 		}
@@ -179,8 +182,22 @@ func (q *Queries) FindUserBySessionID(ctx context.Context, id pgtype.UUID) (User
 	return i, err
 }
 
+const setTaskStatus = `-- name: SetTaskStatus :exec
+update tasks set status = $1 where id = $2
+`
+
+type SetTaskStatusParams struct {
+	Status string
+	ID     pgtype.UUID
+}
+
+func (q *Queries) SetTaskStatus(ctx context.Context, arg SetTaskStatusParams) error {
+	_, err := q.db.Exec(ctx, setTaskStatus, arg.Status, arg.ID)
+	return err
+}
+
 const userTaskByID = `-- name: UserTaskByID :one
-select id, created_at, user_id, summary from tasks where user_id = $1 and id = $2
+select id, created_at, user_id, summary, status from tasks where user_id = $1 and id = $2
 `
 
 type UserTaskByIDParams struct {
@@ -196,6 +213,7 @@ func (q *Queries) UserTaskByID(ctx context.Context, arg UserTaskByIDParams) (Tas
 		&i.CreatedAt,
 		&i.UserID,
 		&i.Summary,
+		&i.Status,
 	)
 	return i, err
 }

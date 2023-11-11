@@ -18,7 +18,8 @@
 
         <div>
           {{range $events := (index $.Events $day)}}
-            <div class="flex gap-4">
+            <a href="/task/event/{{.Id}}/show"
+               class="flex gap-4 hover:bg-red-900">
               <div>
                 {{if .StartTime}}
                   {{.StartTime}}-{{.EndTime}}
@@ -27,7 +28,7 @@
                 {{end}}
               </div>
               <div>{{.Summary}}</div>
-            </div>
+            </a>
           {{end}}
         </div>
       </div>

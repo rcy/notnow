@@ -23,6 +23,7 @@ type Task struct {
 	CreatedAt pgtype.Timestamptz
 	UserID    pgtype.UUID
 	Summary   string
+	Status    string
 }
 
 type TaskEvent struct {

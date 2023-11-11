@@ -5,6 +5,7 @@ import (
 	"yikes/middleware"
 	"yikes/routes/auth"
 	"yikes/routes/hacks"
+	"yikes/routes/task"
 	"yikes/routes/tasks"
 
 	"github.com/go-chi/chi/v5"
@@ -19,5 +20,6 @@ func Router(r chi.Router) {
 		r.Post("/hacks/reschedule", hacks.PostReschedule)
 		r.Post("/hacks/maketasksforevents", hacks.PostMakeTasksForEvents)
 		r.Route("/tasks", tasks.Router)
+		r.Route("/task/event", task.Router)
 	})
 }

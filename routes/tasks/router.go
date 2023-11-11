@@ -95,6 +95,9 @@ func scheduleTask(ctx context.Context, userID pgtype.UUID, taskID pgtype.UUID) e
 	}
 
 	event, err := google.CreateTaskEvent(ctx, userID, task)
+	if err != nil {
+		return err
+	}
 
 	_, err = queries.CreateUserTaskEvent(ctx, yikes.CreateUserTaskEventParams{UserID: userID, TaskID: taskID, EventID: event.Id})
 	if err != nil {

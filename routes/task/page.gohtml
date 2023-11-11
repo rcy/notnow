@@ -1,0 +1,84 @@
+{{define "main"}}
+  <a href="show">
+    <h1 class="text-3xl mb-6">{{.Task.Summary}}</h1>
+  </a>
+
+  {{if eq .State "show"}}
+    {{template "show" .Task}}
+  {{end}}
+
+  {{if eq .State "notnow"}}
+    {{template "notnow" .Task}}
+  {{end}}
+
+  {{if eq .State "start"}}
+    {{template "start" .Task}}
+  {{end}}
+{{end}}
+
+{{define "show"}}
+  <div class="flex gap-2 h-10">
+    {{template "doneButton" .}}
+
+    <a href="start" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+      Work on this task
+    </a>
+
+    {{template "addButton" .}}
+
+    <a href="notnow" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+      Not now
+    </a>
+  </div>
+{{end}}
+
+{{define "notnow"}}
+  <form method="post" action="excuse">
+    <label>Why not do this now?</label>
+    <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-red-500 my-2"
+           name="excuse"
+           type="text"
+           placeholder="Excuse...">
+    
+    <div class="flex gap-2">
+      <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+        Submit Excuse
+      </button>
+      {{template "cancelButton" .}}
+    </div>
+  </form>
+{{end}}
+
+{{define "doneButton"}}
+  <form action="done" method="post">
+    <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+      Mark as done
+    </button>
+  </form>
+{{end}}
+
+{{define "cancelButton"}}
+  <a href="show" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+    Cancel
+  </a>
+{{end}}
+
+{{define "addButton"}}
+  <a href="add" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+    Add related task
+  </a>
+{{end}}
+
+
+{{define "start"}}
+  <div>Work on this task now.  Use this text area for notes.</div>
+  <textarea class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-green-500 my-2"
+            placeholder="Random notes..."></textarea>
+  <div class="flex gap-2 h-10">
+    {{template "doneButton" .}}
+    <a href="show" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+      Stop working on this
+    </a>
+    {{template "addButton" .}}
+  </div>
+{{end}}

@@ -2,6 +2,7 @@ package google
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -171,7 +172,7 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, task yikes.Task) (
 
 	event := calendar.Event{
 		Summary:     taskPrefix + task.Summary,
-		Description: "--- yikes created event ---",
+		Description: fmt.Sprintf("http://localhost:8080/task/%s/show", UUIDString(task.ID)),
 		Start: &calendar.EventDateTime{
 			DateTime: startAt.Format(time.RFC3339),
 		},
@@ -220,6 +221,14 @@ func findNextAvailableTime(ctx context.Context, srv *calendar.Service, dur time.
 		now = event.EndAt()
 	}
 	return &now, nil
+}
+
+func DeleteEvent(ctx context.Context, userID pgtype.UUID, eventID string) error {
+	srv, err := ServiceForUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	return srv.Events.Delete("primary", eventID).Do()
 }
 
 func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {

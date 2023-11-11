@@ -67,7 +67,8 @@ CREATE TABLE public.tasks (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     user_id uuid NOT NULL,
-    summary text NOT NULL
+    summary text NOT NULL,
+    status text DEFAULT 'open'::text NOT NULL
 );
 
 
