@@ -34,5 +34,8 @@ insert into tasks(summary, user_id) values($1, $2) returning *;
 -- name: SetTaskStatus :exec
 update tasks set status = $1 where id = $2;
 
+-- name: SetTaskSummary :one
+update tasks set summary = $1 where id = $2 returning tasks.*;
+
 -- name: CreateUserTaskEvent :one
 insert into task_events(user_id, task_id, event_id) values($1, $2, $3) returning *;

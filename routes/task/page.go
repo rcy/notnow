@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"html/template"
 	"net/http"
+	"strings"
 	"yikes/db"
 	"yikes/db/yikes"
 	"yikes/layout"
@@ -25,6 +26,7 @@ func Router(r chi.Router) {
 	r.Get("/{eventID}/{state}", page)
 	r.Post("/{eventID}/done", postDone)
 	r.Post("/{eventID}/excuse", postExcuse)
+	r.Post("/{eventID}/summary", postSummary)
 }
 
 func page(w http.ResponseWriter, r *http.Request) {
@@ -88,6 +90,40 @@ func postDone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func postSummary(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	//user, _ := middleware.UserFromContext(ctx)
+	eventID := chi.URLParam(r, "eventID")
+	summary := strings.TrimSpace(r.FormValue("summary"))
+
+	queries := yikes.New(db.Conn)
+
+	task, err := queries.FindTaskByEventID(ctx, eventID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if summary == "" {
+		http.Error(w, "empty summary", http.StatusBadRequest)
+		return
+	}
+
+	task, err = queries.SetTaskSummary(ctx, yikes.SetTaskSummaryParams{ID: task.ID, Summary: summary})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// TODO update calendar event
+
+	err = pageTemplate.ExecuteTemplate(w, "title", task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func postExcuse(w http.ResponseWriter, r *http.Request) {

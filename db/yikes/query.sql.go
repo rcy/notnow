@@ -196,6 +196,28 @@ func (q *Queries) SetTaskStatus(ctx context.Context, arg SetTaskStatusParams) er
 	return err
 }
 
+const setTaskSummary = `-- name: SetTaskSummary :one
+update tasks set summary = $1 where id = $2 returning tasks.id, tasks.created_at, tasks.user_id, tasks.summary, tasks.status
+`
+
+type SetTaskSummaryParams struct {
+	Summary string
+	ID      pgtype.UUID
+}
+
+func (q *Queries) SetTaskSummary(ctx context.Context, arg SetTaskSummaryParams) (Task, error) {
+	row := q.db.QueryRow(ctx, setTaskSummary, arg.Summary, arg.ID)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.Summary,
+		&i.Status,
+	)
+	return i, err
+}
+
 const userTaskByID = `-- name: UserTaskByID :one
 select id, created_at, user_id, summary, status from tasks where user_id = $1 and id = $2
 `

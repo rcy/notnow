@@ -1,7 +1,5 @@
 {{define "main"}}
-  <a href="show">
-    <h1 class="text-3xl mb-6">{{.Task.Summary}}</h1>
-  </a>
+  {{template "title" .Task}}
 
   {{if eq .State "show"}}
     {{template "show" .Task}}
@@ -14,6 +12,35 @@
   {{if eq .State "start"}}
     {{template "start" .Task}}
   {{end}}
+{{end}}
+
+{{define "title"}}
+  <div id="title" x-data="{open:false}">
+    <div class="flex items-end mb-6 gap-2"
+         x-show="!open">
+      <div>
+        <a href="show">
+          <h1 class="text-3xl">{{.Summary}}</h1>
+        </a>
+      </div>
+      <a class="hover:bg-blue-900" href="#edit" @click="open=true">edit</a>
+    </div>
+
+    <div class="flex items-end mb-6 gap-2"
+         x-show="open">
+      <form hx-post="summary" hx-target="#title">
+        <input class="bg-black py-1 w-96"
+               name="summary"
+               type="text" value={{.Summary}}>
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded">
+          save
+        </button>
+        <button class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-2 rounded"
+                @click="open=false"
+        >cancel</button>
+      </form>
+    </div>
+  </div>
 {{end}}
 
 {{define "show"}}
@@ -49,6 +76,19 @@
   </form>
 {{end}}
 
+{{define "start"}}
+  <div>Work on this task now.  Use this text area for notes.</div>
+  <textarea class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-green-500 my-2"
+            placeholder="Random notes..."></textarea>
+  <div class="flex gap-2 h-10">
+    {{template "doneButton" .}}
+    <a href="show" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+      Stop working on this
+    </a>
+    {{template "addButton" .}}
+  </div>
+{{end}}
+
 {{define "doneButton"}}
   <form action="done" method="post">
     <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
@@ -67,18 +107,4 @@
   <a href="add" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
     Add related task
   </a>
-{{end}}
-
-
-{{define "start"}}
-  <div>Work on this task now.  Use this text area for notes.</div>
-  <textarea class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-green-500 my-2"
-            placeholder="Random notes..."></textarea>
-  <div class="flex gap-2 h-10">
-    {{template "doneButton" .}}
-    <a href="show" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-      Stop working on this
-    </a>
-    {{template "addButton" .}}
-  </div>
 {{end}}
