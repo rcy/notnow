@@ -53,13 +53,6 @@ func post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// tasks, err := queries.FindTasksByUserID(ctx, user.ID)
-
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-
 	w.Header().Add("HX-Trigger", "calendarUpdated")
 
 	partials.ExecuteTemplate(w, "tasks/section", nil)
