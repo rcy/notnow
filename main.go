@@ -26,6 +26,11 @@ func main() {
 	go rescheduler.Loop()
 
 	// Start the server
-	log.Println("Server started on :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8088"
+	}
+	log.Printf("Server started on :%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, r))
+
 }
