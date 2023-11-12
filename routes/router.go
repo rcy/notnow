@@ -18,7 +18,6 @@ func Router(r chi.Router) {
 		r.Use(middleware.User)
 		r.Get("/", Page)
 		r.Post("/hacks/reschedule", hacks.PostReschedule)
-		r.Post("/hacks/maketasksforevents", hacks.PostMakeTasksForEvents)
 		r.Route("/tasks", tasks.Router)
 		r.Route("/event", task.Router)
 	})
