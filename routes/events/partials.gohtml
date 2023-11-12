@@ -18,17 +18,45 @@
 
         <div>
           {{range $events := (index $.Events $day)}}
-            <a href="/event/{{.Id}}/show"
-               class="flex gap-4 hover:bg-red-900">
-              <div>
-                {{if .StartTime}}
-                  {{.StartTime}}-{{.EndTime}}
-                {{else}}
-                  All day
-                {{end}}
-              </div>
-              <div>{{.Summary}}</div>
-            </a>
+            {{if .IsTask}}
+              <a href="/event/{{.Id}}/show"
+                 class="flex gap-4 bg-cyan-800 hover:bg-black">
+                <div>
+                  {{if .StartTime}}
+                    {{.StartTime}}-{{.EndTime}}
+                  {{else}}
+                    All day
+                  {{end}}
+                </div>
+                <div>TASK {{.Summary}}</div>
+              </a>
+            {{else}}
+              {{if .IsContext}}
+                <a href="/context/{{.Id}}/show"
+                   class="flex gap-4 hover:bg-red-900">
+                  <div>
+                    {{if .StartTime}}
+                      {{.StartTime}}-{{.EndTime}}
+                    {{else}}
+                      All day
+                    {{end}}
+                  </div>
+                  <div>CONTEXT {{.Summary}}</div>
+                </a>
+              {{else}}
+                <a href="/context/{{.Id}}/show"
+                   class="flex gap-4 hover:bg-red-900">
+                  <div>
+                    {{if .StartTime}}
+                      {{.StartTime}}-{{.EndTime}}
+                    {{else}}
+                      All day
+                    {{end}}
+                  </div>
+                  <div>{{.Summary}}</div>
+                </a>
+              {{end}}
+            {{end}}
           {{end}}
         </div>
       </div>

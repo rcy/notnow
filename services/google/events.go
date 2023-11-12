@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	taskPrefix = "."
+	taskPrefix    = "."
+	contextPrefix = "@"
 )
 
 type Event struct {
@@ -67,6 +68,14 @@ func (e *Event) EndAt() time.Time {
 
 func (e *Event) Duration() time.Duration {
 	return e.EndAt().Sub(e.StartAt())
+}
+
+func (e *Event) IsTask() bool {
+	return strings.HasPrefix(e.Summary, taskPrefix)
+}
+
+func (e *Event) IsContext() bool {
+	return strings.HasPrefix(e.Summary, contextPrefix)
 }
 
 type fetchEventsParam struct {
