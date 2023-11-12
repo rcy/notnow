@@ -13,5 +13,9 @@ func MustConnect(ctx context.Context, connString string) {
 	if err != nil {
 		panic(err)
 	}
+	err = pool.Ping(ctx)
+	if err != nil {
+		panic(err)
+	}
 	Conn = pool
 }
