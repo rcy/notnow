@@ -3,15 +3,15 @@ package db
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var Conn *pgx.Conn
+var Conn *pgxpool.Pool
 
 func MustConnect(ctx context.Context, connString string) {
-	conn, err := pgx.Connect(ctx, connString)
+	pool, err := pgxpool.New(ctx, connString)
 	if err != nil {
 		panic(err)
 	}
-	Conn = conn
+	Conn = pool
 }

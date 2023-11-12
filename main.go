@@ -16,7 +16,7 @@ func main() {
 	ctx := context.Background()
 
 	db.MustConnect(ctx, os.Getenv("DATABASE_URL"))
-	defer db.Conn.Close(ctx)
+	defer db.Conn.Close()
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
