@@ -1,3 +1,6 @@
+-- name: AllUsers :many
+select * from users limit 1000;
+
 -- name: FindTokenByUserID :one
 select tokens.* from tokens join users on tokens.user_id = users.id where users.id = $1 limit 1;
 

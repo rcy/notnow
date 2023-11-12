@@ -11,6 +11,30 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const allUsers = `-- name: AllUsers :many
+select id, created_at, email from users limit 1000
+`
+
+func (q *Queries) AllUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.Query(ctx, allUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(&i.ID, &i.CreatedAt, &i.Email); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createSession = `-- name: CreateSession :one
 insert into sessions(user_id) values($1) returning id
 `

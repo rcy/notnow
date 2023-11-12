@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"yikes/db"
+	"yikes/jobs/rescheduler"
 	"yikes/routes"
 
 	"github.com/go-chi/chi/v5"
@@ -21,6 +22,8 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Route("/", routes.Router)
+
+	go rescheduler.Loop()
 
 	// Start the server
 	log.Println("Server started on :8080")
