@@ -25,7 +25,7 @@ sql:
 	psql ${DATABASE_URL}
 
 dump:
-	docker exec -it yikes_postgres_1 pg_dump --dbname=${PGDATABASE} --user=postgres --table=public.* --schema-only
+	docker exec -it notnow-postgres-1 pg_dump --dbname=${PGDATABASE} --user=postgres --table=public.* --schema-only
 
 schema:
 	${MAKE} -s dump > schema.sql
