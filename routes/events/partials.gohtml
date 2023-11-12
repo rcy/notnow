@@ -18,22 +18,10 @@
 
         <div>
           {{range $events := (index $.Events $day)}}
-            {{if .IsTask}}
-              <a href="/event/{{.Id}}/show"
-                 class="flex gap-4 bg-cyan-800 hover:bg-black">
-                <div>
-                  {{if .StartTime}}
-                    {{.StartTime}}-{{.EndTime}}
-                  {{else}}
-                    All day
-                  {{end}}
-                </div>
-                <div>TASK {{.Summary}}</div>
-              </a>
-            {{else}}
-              {{if .IsContext}}
-                <a href="/context/{{.Id}}/show"
-                   class="flex gap-4 hover:bg-red-900">
+            <div class="hover:bg-black">
+              {{if .IsTask}}
+                <a class="flex gap-4"
+                   href="/event/{{.Id}}/show">
                   <div>
                     {{if .StartTime}}
                       {{.StartTime}}-{{.EndTime}}
@@ -41,22 +29,36 @@
                       All day
                     {{end}}
                   </div>
-                  <div>CONTEXT {{.Summary}}</div>
+                  <div>TASK {{.Summary}}</div>
                 </a>
               {{else}}
-                <a href="/context/{{.Id}}/show"
-                   class="flex gap-4 hover:bg-red-900">
-                  <div>
-                    {{if .StartTime}}
-                      {{.StartTime}}-{{.EndTime}}
-                    {{else}}
-                      All day
-                    {{end}}
-                  </div>
-                  <div>{{.Summary}}</div>
-                </a>
+                {{if .IsContext}}
+                  <a href="/context/{{.Id}}/show"
+                     class="flex gap-4">
+                    <div>
+                      {{if .StartTime}}
+                        {{.StartTime}}-{{.EndTime}}
+                      {{else}}
+                        All day
+                      {{end}}
+                    </div>
+                    <div>CONTEXT {{.Summary}}</div>
+                  </a>
+                {{else}}
+                  <a href="/context/{{.Id}}/show"
+                     class="flex gap-4">
+                    <div>
+                      {{if .StartTime}}
+                        {{.StartTime}}-{{.EndTime}}
+                      {{else}}
+                        All day
+                      {{end}}
+                    </div>
+                    <div>{{.Summary}}</div>
+                  </a>
+                {{end}}
               {{end}}
-            {{end}}
+            </div>
           {{end}}
         </div>
       </div>
