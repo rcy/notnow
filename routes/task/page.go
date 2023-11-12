@@ -5,15 +5,12 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
-	"yikes/db"
-	"yikes/db/yikes"
 	"yikes/layout"
 	"yikes/middleware"
 	"yikes/routes/events"
 	"yikes/services/google"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -23,6 +20,7 @@ var (
 )
 
 func Router(r chi.Router) {
+	r.Get("/{eventID}", page)
 	r.Get("/{eventID}/{state}", page)
 	r.Post("/{eventID}/done", postDone)
 	r.Post("/{eventID}/excuse", postExcuse)
@@ -31,24 +29,37 @@ func Router(r chi.Router) {
 
 func page(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	queries := yikes.New(db.Conn)
+	user, _ := middleware.UserFromContext(ctx)
+	eventID := chi.URLParam(r, "eventID")
+	state := chi.URLParam(r, "state")
+	if state == "" {
+		state = "show"
+	}
+	//queries := yikes.New(db.Conn)
 
-	task, err := queries.FindTaskByEventID(ctx, chi.URLParam(r, "eventID"))
+	// task, err := queries.FindTaskByEventID(ctx, chi.URLParam(r, "eventID"))
+	// if err != nil {
+	// 	if err == pgx.ErrNoRows {
+	// 		http.NotFound(w, r)
+	// 		return
+	// 	}
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+
+	event, err := google.UserEvent(ctx, user.ID, eventID)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			http.NotFound(w, r)
-			return
-		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	pageTemplate.Execute(w, struct {
 		State string
-		Task  yikes.Task
+		Event *google.Event
 	}{
-		State: chi.URLParam(r, "state"),
-		Task:  task,
+		State: state,
+		//Task:  task,
+		Event: event,
 	})
 }
 
@@ -57,69 +68,72 @@ func postDone(w http.ResponseWriter, r *http.Request) {
 	user, _ := middleware.UserFromContext(ctx)
 	eventID := chi.URLParam(r, "eventID")
 
-	tx, err := db.Conn.Begin(ctx)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer tx.Rollback(ctx)
+	// tx, err := db.Conn.Begin(ctx)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	// defer tx.Rollback(ctx)
 
-	queries := yikes.New(tx)
-	task, err := queries.FindTaskByEventID(ctx, eventID)
+	// queries := yikes.New(tx)
+	// task, err := queries.FindTaskByEventID(ctx, eventID)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+
+	// err = queries.SetTaskStatus(ctx, yikes.SetTaskStatusParams{ID: task.ID, Status: "done"})
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+
+	err := google.DeleteEvent(ctx, user.ID, eventID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = queries.SetTaskStatus(ctx, yikes.SetTaskStatusParams{ID: task.ID, Status: "done"})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = google.DeleteEvent(ctx, user.ID, eventID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// err = tx.Commit(ctx)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func postSummary(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	//user, _ := middleware.UserFromContext(ctx)
+	user, _ := middleware.UserFromContext(ctx)
 	eventID := chi.URLParam(r, "eventID")
 	summary := strings.TrimSpace(r.FormValue("summary"))
-
-	queries := yikes.New(db.Conn)
-
-	task, err := queries.FindTaskByEventID(ctx, eventID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	if summary == "" {
 		http.Error(w, "empty summary", http.StatusBadRequest)
 		return
 	}
 
-	task, err = queries.SetTaskSummary(ctx, yikes.SetTaskSummaryParams{ID: task.ID, Summary: summary})
+	//queries := yikes.New(db.Conn)
+
+	// task, err := queries.FindTaskByEventID(ctx, eventID)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+
+	// task, err = queries.SetTaskSummary(ctx, yikes.SetTaskSummaryParams{ID: task.ID, Summary: summary})
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
+
+	event, err := google.UpdateEventSummary(ctx, user.ID, eventID, summary)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// TODO update calendar event
-
-	err = pageTemplate.ExecuteTemplate(w, "title", task)
+	err = pageTemplate.ExecuteTemplate(w, "title", event)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

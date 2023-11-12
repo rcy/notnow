@@ -16,26 +16,26 @@ insert into sessions(user_id) values($1) returning id;
 -- name: FindUserBySessionID :one
 select users.* from sessions join users on sessions.user_id = users.id where sessions.id = $1;
 
--- name: FindTasksByUserID :many
-select * from tasks where user_id = $1 order by created_at desc limit 1000;
+-- -- name: FindTasksByUserID :many
+-- select * from tasks where user_id = $1 order by created_at desc limit 1000;
 
--- name: FindTaskByEventID :one
-select tasks.* from tasks
-join task_events on tasks.id = task_events.task_id
-where task_events.event_id = $1
-limit 1;
+-- -- name: FindTaskByEventID :one
+-- select tasks.* from tasks
+-- join task_events on tasks.id = task_events.task_id
+-- where task_events.event_id = $1
+-- limit 1;
 
--- name: UserTaskByID :one
-select * from tasks where user_id = $1 and id = $2;
+-- -- name: UserTaskByID :one
+-- select * from tasks where user_id = $1 and id = $2;
 
--- name: CreateTask :one
-insert into tasks(summary, user_id) values($1, $2) returning *;
+-- -- name: CreateTask :one
+-- insert into tasks(summary, user_id) values($1, $2) returning *;
 
--- name: SetTaskStatus :exec
-update tasks set status = $1 where id = $2;
+-- -- name: SetTaskStatus :exec
+-- update tasks set status = $1 where id = $2;
 
--- name: SetTaskSummary :one
-update tasks set summary = $1 where id = $2 returning tasks.*;
+-- -- name: SetTaskSummary :one
+-- update tasks set summary = $1 where id = $2 returning tasks.*;
 
--- name: CreateUserTaskEvent :one
-insert into task_events(user_id, task_id, event_id) values($1, $2, $3) returning *;
+-- -- name: CreateUserTaskEvent :one
+-- insert into task_events(user_id, task_id, event_id) values($1, $2, $3) returning *;

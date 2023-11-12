@@ -4,8 +4,6 @@ import (
 	_ "embed"
 	"html/template"
 	"net/http"
-	"yikes/db"
-	"yikes/db/yikes"
 	"yikes/layout"
 	mw "yikes/middleware"
 	"yikes/routes/events"
@@ -29,19 +27,19 @@ func Page(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	queries := yikes.New(db.Conn)
-	tasks, err := queries.FindTasksByUserID(ctx, user.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// queries := yikes.New(db.Conn)
+	// tasks, err := queries.FindTasksByUserID(ctx, user.ID)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	err = pageTemplate.Execute(w, struct {
 		GroupedEvents google.TimeGrouping
-		Tasks         []yikes.Task
+		//		Tasks         []yikes.Task
 	}{
 		GroupedEvents: *groupedEvents,
-		Tasks:         tasks,
+		//Tasks:         tasks,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

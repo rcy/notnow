@@ -1,16 +1,16 @@
 {{define "main"}}
-  {{template "title" .Task}}
+  {{template "title" .Event}}
 
   {{if eq .State "show"}}
-    {{template "show" .Task}}
+    {{template "show" .Event}}
   {{end}}
 
   {{if eq .State "notnow"}}
-    {{template "notnow" .Task}}
+    {{template "notnow" .Event}}
   {{end}}
 
   {{if eq .State "start"}}
-    {{template "start" .Task}}
+    {{template "start" .Event}}
   {{end}}
 {{end}}
 

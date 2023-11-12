@@ -22,28 +22,6 @@ func (q *Queries) CreateSession(ctx context.Context, userID pgtype.UUID) (pgtype
 	return id, err
 }
 
-const createTask = `-- name: CreateTask :one
-insert into tasks(summary, user_id) values($1, $2) returning id, created_at, user_id, summary, status
-`
-
-type CreateTaskParams struct {
-	Summary string
-	UserID  pgtype.UUID
-}
-
-func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
-	row := q.db.QueryRow(ctx, createTask, arg.Summary, arg.UserID)
-	var i Task
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UserID,
-		&i.Summary,
-		&i.Status,
-	)
-	return i, err
-}
-
 const createToken = `-- name: CreateToken :one
 insert into tokens(token, user_id) values($1, $2) returning id
 `
@@ -69,79 +47,6 @@ func (q *Queries) CreateUser(ctx context.Context, email string) (User, error) {
 	var i User
 	err := row.Scan(&i.ID, &i.CreatedAt, &i.Email)
 	return i, err
-}
-
-const createUserTaskEvent = `-- name: CreateUserTaskEvent :one
-insert into task_events(user_id, task_id, event_id) values($1, $2, $3) returning id, created_at, user_id, task_id, event_id
-`
-
-type CreateUserTaskEventParams struct {
-	UserID  pgtype.UUID
-	TaskID  pgtype.UUID
-	EventID string
-}
-
-func (q *Queries) CreateUserTaskEvent(ctx context.Context, arg CreateUserTaskEventParams) (TaskEvent, error) {
-	row := q.db.QueryRow(ctx, createUserTaskEvent, arg.UserID, arg.TaskID, arg.EventID)
-	var i TaskEvent
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UserID,
-		&i.TaskID,
-		&i.EventID,
-	)
-	return i, err
-}
-
-const findTaskByEventID = `-- name: FindTaskByEventID :one
-select tasks.id, tasks.created_at, tasks.user_id, tasks.summary, tasks.status from tasks
-join task_events on tasks.id = task_events.task_id
-where task_events.event_id = $1
-limit 1
-`
-
-func (q *Queries) FindTaskByEventID(ctx context.Context, eventID string) (Task, error) {
-	row := q.db.QueryRow(ctx, findTaskByEventID, eventID)
-	var i Task
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UserID,
-		&i.Summary,
-		&i.Status,
-	)
-	return i, err
-}
-
-const findTasksByUserID = `-- name: FindTasksByUserID :many
-select id, created_at, user_id, summary, status from tasks where user_id = $1 order by created_at desc limit 1000
-`
-
-func (q *Queries) FindTasksByUserID(ctx context.Context, userID pgtype.UUID) ([]Task, error) {
-	rows, err := q.db.Query(ctx, findTasksByUserID, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Task
-	for rows.Next() {
-		var i Task
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.UserID,
-			&i.Summary,
-			&i.Status,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const findTokenByUserID = `-- name: FindTokenByUserID :one
@@ -179,63 +84,5 @@ func (q *Queries) FindUserBySessionID(ctx context.Context, id pgtype.UUID) (User
 	row := q.db.QueryRow(ctx, findUserBySessionID, id)
 	var i User
 	err := row.Scan(&i.ID, &i.CreatedAt, &i.Email)
-	return i, err
-}
-
-const setTaskStatus = `-- name: SetTaskStatus :exec
-update tasks set status = $1 where id = $2
-`
-
-type SetTaskStatusParams struct {
-	Status string
-	ID     pgtype.UUID
-}
-
-func (q *Queries) SetTaskStatus(ctx context.Context, arg SetTaskStatusParams) error {
-	_, err := q.db.Exec(ctx, setTaskStatus, arg.Status, arg.ID)
-	return err
-}
-
-const setTaskSummary = `-- name: SetTaskSummary :one
-update tasks set summary = $1 where id = $2 returning tasks.id, tasks.created_at, tasks.user_id, tasks.summary, tasks.status
-`
-
-type SetTaskSummaryParams struct {
-	Summary string
-	ID      pgtype.UUID
-}
-
-func (q *Queries) SetTaskSummary(ctx context.Context, arg SetTaskSummaryParams) (Task, error) {
-	row := q.db.QueryRow(ctx, setTaskSummary, arg.Summary, arg.ID)
-	var i Task
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UserID,
-		&i.Summary,
-		&i.Status,
-	)
-	return i, err
-}
-
-const userTaskByID = `-- name: UserTaskByID :one
-select id, created_at, user_id, summary, status from tasks where user_id = $1 and id = $2
-`
-
-type UserTaskByIDParams struct {
-	UserID pgtype.UUID
-	ID     pgtype.UUID
-}
-
-func (q *Queries) UserTaskByID(ctx context.Context, arg UserTaskByIDParams) (Task, error) {
-	row := q.db.QueryRow(ctx, userTaskByID, arg.UserID, arg.ID)
-	var i Task
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UserID,
-		&i.Summary,
-		&i.Status,
-	)
 	return i, err
 }

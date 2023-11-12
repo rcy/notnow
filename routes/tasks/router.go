@@ -5,8 +5,7 @@ import (
 	_ "embed"
 	"html/template"
 	"net/http"
-	"yikes/db"
-	"yikes/db/yikes"
+	"time"
 	"yikes/middleware"
 	"yikes/routes/events"
 	"yikes/services/google"
@@ -17,7 +16,7 @@ import (
 
 func Router(r chi.Router) {
 	r.Post("/", post)
-	r.Post("/{id}/schedule", postSchedule)
+	//	r.Post("/{id}/schedule", postSchedule)
 }
 
 var (
@@ -37,17 +36,17 @@ func post(w http.ResponseWriter, r *http.Request) {
 
 	user, _ := middleware.UserFromContext(ctx)
 
-	queries := yikes.New(db.Conn)
-	task, err := queries.CreateTask(ctx, yikes.CreateTaskParams{
-		Summary: summary,
-		UserID:  user.ID,
-	})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	//queries := yikes.New(db.Conn)
+	// task, err := queries.CreateTask(ctx, yikes.CreateTaskParams{
+	// 	Summary: summary,
+	// 	UserID:  user.ID,
+	// })
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
-	err = scheduleTask(ctx, user.ID, task.ID)
+	err := scheduleTask(ctx, user.ID, summary, time.Hour)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -58,51 +57,52 @@ func post(w http.ResponseWriter, r *http.Request) {
 	partials.ExecuteTemplate(w, "tasks/section", nil)
 }
 
-func postSchedule(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+// func postSchedule(w http.ResponseWriter, r *http.Request) {
+// 	ctx := r.Context()
 
-	taskID := pgtype.UUID{}
-	err := taskID.Scan(chi.URLParam(r, "id"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	user, _ := middleware.UserFromContext(ctx)
+// 	taskID := pgtype.UUID{}
+// 	err := taskID.Scan(chi.URLParam(r, "id"))
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+// 	user, _ := middleware.UserFromContext(ctx)
 
-	err = scheduleTask(ctx, user.ID, taskID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+// 	err = scheduleTask(ctx, user.ID, taskID)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.Header().Add("HX-Trigger", "calendarUpdated")
+// 	w.Header().Add("HX-Trigger", "calendarUpdated")
 
-	w.WriteHeader(http.StatusCreated)
-}
+// 	w.WriteHeader(http.StatusCreated)
+// }
 
-func scheduleTask(ctx context.Context, userID pgtype.UUID, taskID pgtype.UUID) error {
-	tx, err := db.Conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
+func scheduleTask(ctx context.Context, userID pgtype.UUID, summary string, duration time.Duration) error {
+	// tx, err := db.Conn.Begin(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer tx.Rollback(ctx)
 
-	queries := yikes.New(tx)
+	//queries := yikes.New(tx)
 
-	task, err := queries.UserTaskByID(ctx, yikes.UserTaskByIDParams{UserID: userID, ID: taskID})
-	if err != nil {
-		return err
-	}
+	// task, err := queries.UserTaskByID(ctx, yikes.UserTaskByIDParams{UserID: userID, ID: taskID})
+	// if err != nil {
+	// 	return err
+	// }
 
-	event, err := google.CreateTaskEvent(ctx, userID, task)
-	if err != nil {
-		return err
-	}
-
-	_, err = queries.CreateUserTaskEvent(ctx, yikes.CreateUserTaskEventParams{UserID: userID, TaskID: taskID, EventID: event.Id})
+	_, err := google.CreateTaskEvent(ctx, userID, summary, duration)
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit(ctx)
+	// _, err = queries.CreateUserTaskEvent(ctx, yikes.CreateUserTaskEventParams{UserID: userID, TaskID: taskID, EventID: event.Id})
+	// if err != nil {
+	// 	return err
+	// }
+
+	//return tx.Commit(ctx)
+	return nil
 }

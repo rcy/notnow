@@ -20,6 +20,6 @@ func Router(r chi.Router) {
 		r.Post("/hacks/reschedule", hacks.PostReschedule)
 		r.Post("/hacks/maketasksforevents", hacks.PostMakeTasksForEvents)
 		r.Route("/tasks", tasks.Router)
-		r.Route("/task/event", task.Router)
+		r.Route("/event", task.Router)
 	})
 }
