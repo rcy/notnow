@@ -22,12 +22,18 @@ func Loop() {
 
 		for _, user := range users {
 			log.Printf("rescheduling tasks for %s", user.Email)
-			err := google.ReschedulePastTasks(ctx, user.ID)
+
+			err := google.UpdateTaskDescriptions(ctx, user.ID)
+			if err != nil {
+				log.Printf("UpdateTaskDescriptions error: %s", err)
+				continue
+			}
+
+			err = google.ReschedulePastTasks(ctx, user.ID)
 			if err != nil {
 				log.Printf("Reschedule error: %s", err)
 				continue
 			}
-
 		}
 
 		time.Sleep(5 * time.Minute)

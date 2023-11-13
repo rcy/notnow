@@ -5,6 +5,8 @@ import (
 	"encoding/base32"
 	"fmt"
 	"log"
+	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -122,6 +124,10 @@ func UserEventsGroupedByDay(ctx context.Context, userID pgtype.UUID) (*TimeGroup
 	return &tg, nil
 }
 
+func eventURL(id string) string {
+	return fmt.Sprintf("%s/event/%s", os.Getenv("ROOT_URL"), id)
+}
+
 func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, summary string, duration time.Duration) (*calendar.Event, error) {
 	srv, err := ServiceForUser(ctx, userID)
 	if err != nil {
@@ -143,12 +149,10 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, summary string, du
 		WithPadding(base32.NoPadding).
 		EncodeToString(uuid[:])
 
-	description := fmt.Sprintf("http://localhost:8080/event/%s", id)
-
 	event := calendar.Event{
 		Id:          id,
 		Summary:     taskPrefix + summary,
-		Description: description,
+		Description: eventURL(id),
 		Start: &calendar.EventDateTime{
 			DateTime: startAt.Format(time.RFC3339),
 		},
@@ -264,4 +268,50 @@ func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {
 		}
 	}
 	return nil
+}
+
+func UpdateTaskDescriptions(ctx context.Context, userID pgtype.UUID) error {
+	srv, err := ServiceForUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	events, err := fetchAllEvents(ctx, srv)
+	if err != nil {
+		return err
+	}
+
+	for _, ev := range events {
+		log.Printf("ev: %s", ev.Summary)
+
+		if !strings.HasPrefix(ev.Summary, taskPrefix) {
+			continue
+		}
+
+		err := updateTaskDescription(srv, &ev)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Update event to include link in the description to this event if it does not already exist
+func updateTaskDescription(srv *calendar.Service, ev *Event) error {
+	url := eventURL(ev.Id)
+
+	match, err := regexp.MatchString(regexp.QuoteMeta(url), ev.Description)
+	if err != nil {
+		return err
+	}
+	if match {
+		return nil
+	}
+	ev.Description = fmt.Sprintf("%s\n%s", url, ev.Description)
+	gev, err := srv.Events.Update("primary", ev.Id, &ev.Event).Do()
+	if err != nil {
+		return err
+	}
+	ev.Event = *gev
+	return err
 }
