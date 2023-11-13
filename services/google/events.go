@@ -159,11 +159,6 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, summary string, du
 		End: &calendar.EventDateTime{
 			DateTime: startAt.Add(duration).Format(time.RFC3339),
 		},
-		// ExtendedProperties: &calendar.EventExtendedProperties{
-		// 	Private: map[string]string{
-		// 		"yikes": UUIDString(task.ID),
-		// 	},
-		// },
 	}
 
 	return srv.Events.Insert("primary", &event).Do()
@@ -237,17 +232,7 @@ func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {
 		return err
 	}
 
-	//queries := yikes.New(db.Conn)
-
 	for _, ev := range events {
-		// task, err := queries.FindTaskByEventID(ctx, ev.Id)
-		// if err != nil {
-		// 	if err == pgx.ErrNoRows {
-		// 		continue
-		// 	}
-		// 	return err
-		// }
-
 		if !strings.HasPrefix(ev.Summary, taskPrefix) {
 			continue
 		}
