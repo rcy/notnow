@@ -1,6 +1,7 @@
 package google
 
 import (
+	"regexp"
 	"strings"
 	"time"
 
@@ -62,6 +63,35 @@ func (e *Event) IsTask() bool {
 	return strings.HasPrefix(e.Summary, taskPrefix)
 }
 
-func (e *Event) IsContext() bool {
-	return strings.HasPrefix(e.Summary, contextPrefix)
+var contextRegexp = regexp.MustCompile(regexp.QuoteMeta(withContextPrefix) + "(\\w+)")
+
+func (e *Event) Contexts() []string {
+	contexts := []string{}
+	for _, matches := range contextRegexp.FindAllStringSubmatch(e.Summary, -1) {
+		contexts = append(contexts, matches[1])
+	}
+	return contexts
+}
+
+func (e *Event) IsContainer() bool {
+	return strings.HasPrefix(e.Summary, containerPrefix)
+}
+
+var containerRegexp = regexp.MustCompile(regexp.QuoteMeta(containerPrefix) + "(\\w+)")
+
+func (e *Event) ContainerContexts() []string {
+	contexts := []string{}
+	for _, matches := range containerRegexp.FindAllStringSubmatch(e.Summary, -1) {
+		contexts = append(contexts, matches[1])
+	}
+	return contexts
+}
+
+func (e *Event) IsContainerFor(context string) bool {
+	for _, c := range e.ContainerContexts() {
+		if c == context {
+			return true
+		}
+	}
+	return false
 }

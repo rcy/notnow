@@ -46,7 +46,7 @@ func post(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	err := scheduleTask(ctx, user.ID, summary, time.Hour)
+	err := scheduleTask(ctx, user.ID, summary, 15*time.Minute)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

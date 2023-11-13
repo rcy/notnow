@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	taskPrefix    = "."
-	contextPrefix = "@"
+	taskPrefix        = "."
+	containerPrefix   = "="
+	withContextPrefix = "+"
 )
 
 type fetchEventsParam struct {
@@ -134,11 +135,6 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, summary string, du
 		return nil, err
 	}
 
-	startAt, err := findNextAvailableTime(ctx, srv, duration)
-	if err != nil {
-		return nil, err
-	}
-
 	// generate our own id so we can create a link back to it through this app
 	uuid, err := uuid.NewRandom()
 	if err != nil {
@@ -149,17 +145,23 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, summary string, du
 		WithPadding(base32.NoPadding).
 		EncodeToString(uuid[:])
 
+	dummyStartAt := time.Now().Add(-24 * time.Hour)
 	event := calendar.Event{
 		Id:          id,
 		Summary:     taskPrefix + summary,
 		Description: eventURL(id),
-		Start: &calendar.EventDateTime{
-			DateTime: startAt.Format(time.RFC3339),
-		},
-		End: &calendar.EventDateTime{
-			DateTime: startAt.Add(duration).Format(time.RFC3339),
-		},
+		// need to provide a start and end time so duration can be computed
+		Start: &calendar.EventDateTime{DateTime: dummyStartAt.Format(time.RFC3339)},
+		End:   &calendar.EventDateTime{DateTime: dummyStartAt.Add(duration).Format(time.RFC3339)},
 	}
+
+	startAt, err := findNextAvailableTime(ctx, srv, &Event{event})
+	if err != nil {
+		return nil, err
+	}
+
+	event.Start = &calendar.EventDateTime{DateTime: startAt.Format(time.RFC3339)}
+	event.End = &calendar.EventDateTime{DateTime: startAt.Add(duration).Format(time.RFC3339)}
 
 	return srv.Events.Insert("primary", &event).Do()
 }
@@ -195,16 +197,35 @@ func StringUUID(str string) pgtype.UUID {
 	return uuid
 }
 
-func findNextAvailableTime(ctx context.Context, srv *calendar.Service, dur time.Duration) (*time.Time, error) {
+func findNextAvailableTime(ctx context.Context, srv *calendar.Service, ev *Event) (*time.Time, error) {
 	events, err := fetchFutureEvents(ctx, srv)
 	if err != nil {
 		return nil, err
 	}
+
 	now := time.Now()
+
+	// start at the time of the first matching context
+	if contexts := ev.Contexts(); len(contexts) > 0 {
+		// TODO consider all contexts, not just first one
+		context := contexts[0]
+		containerEvent := findContextContainer(events, context)
+		now = containerEvent.StartAt()
+
+		// trim out the older events
+		newEvents := []Event{}
+		for _, ev := range events {
+			if !ev.StartAt().Before(containerEvent.StartAt()) {
+				newEvents = append(newEvents, ev)
+			}
+		}
+		events = newEvents
+	}
+
 	for _, event := range events {
 		if now.Before(event.StartAt()) {
 			// we are in a window of free time
-			if event.StartAt().Sub(now) < dur {
+			if event.StartAt().Sub(now) < ev.Duration() {
 				continue
 			}
 			return &now, nil
@@ -212,6 +233,16 @@ func findNextAvailableTime(ctx context.Context, srv *calendar.Service, dur time.
 		now = event.EndAt()
 	}
 	return &now, nil
+}
+
+// Return first event that is a container for context
+func findContextContainer(events []Event, context string) *Event {
+	for _, ev := range events {
+		if ev.IsContainerFor(context) {
+			return &ev
+		}
+	}
+	return nil
 }
 
 func DeleteEvent(ctx context.Context, userID pgtype.UUID, eventID string) error {
@@ -239,7 +270,7 @@ func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {
 
 		dur := ev.Duration()
 
-		startAt, err := findNextAvailableTime(ctx, srv, dur)
+		startAt, err := findNextAvailableTime(ctx, srv, &ev)
 		if err != nil {
 			return fmt.Errorf("ReschedulePastTasks: %w", err)
 		}
