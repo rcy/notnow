@@ -2,7 +2,12 @@
 select * from users limit 1000;
 
 -- name: FindTokenByUserID :one
-select tokens.* from tokens join users on tokens.user_id = users.id where users.id = $1 limit 1;
+select tokens.*
+from tokens
+join users on tokens.user_id = users.id
+where users.id = $1
+order by created_at desc
+limit 1;
 
 -- name: CreateToken :one
 insert into tokens(token, user_id) values($1, $2) returning id;

@@ -74,7 +74,12 @@ func (q *Queries) CreateUser(ctx context.Context, email string) (User, error) {
 }
 
 const findTokenByUserID = `-- name: FindTokenByUserID :one
-select tokens.id, tokens.created_at, tokens.token, tokens.user_id from tokens join users on tokens.user_id = users.id where users.id = $1 limit 1
+select tokens.id, tokens.created_at, tokens.token, tokens.user_id
+from tokens
+join users on tokens.user_id = users.id
+where users.id = $1
+order by created_at desc
+limit 1
 `
 
 func (q *Queries) FindTokenByUserID(ctx context.Context, id pgtype.UUID) (Token, error) {
