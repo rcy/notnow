@@ -20,7 +20,9 @@ var (
 )
 
 func Router(r chi.Router) {
-	r.Get("/{eventID}", page)
+	r.Get("/{eventID}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, r.URL.String()+"/show", http.StatusSeeOther)
+	})
 	r.Get("/{eventID}/{state}", page)
 	r.Post("/{eventID}/done", postDone)
 	r.Post("/{eventID}/excuse", postExcuse)
