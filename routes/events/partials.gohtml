@@ -21,7 +21,7 @@
             <div class="hover:bg-black">
               {{if .IsTask}}
                 <a class="flex gap-4"
-                   href="/event/{{.Id}}/show">
+                   href="/events/{{.Id}}/show">
                   <div>
                     {{if .StartTime}}
                       {{.StartTime}}-{{.EndTime}}
@@ -33,7 +33,7 @@
                 </a>
               {{else}}
                 {{if .IsContainer}}
-                  <a href="/context/{{.Id}}/show"
+                  <a href="/events/{{.Id}}/show"
                      class="flex gap-4">
                     <div>
                       {{if .StartTime}}
@@ -45,7 +45,7 @@
                     <div>CONTEXT {{.Summary}}</div>
                   </a>
                 {{else}}
-                  <a href="/context/{{.Id}}/show"
+                  <a href="/events/{{.Id}}/show"
                      class="flex gap-4">
                     <div>
                       {{if .StartTime}}
