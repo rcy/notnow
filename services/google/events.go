@@ -172,14 +172,11 @@ func UpdateEventSummary(ctx context.Context, userID pgtype.UUID, eventID string,
 		return nil, err
 	}
 
-	event, err := UserEvent(ctx, userID, eventID)
-	if err != nil {
-		return nil, err
+	event := &calendar.Event{
+		Summary: summary,
 	}
 
-	event.Summary = summary
-
-	return srv.Events.Update("primary", eventID, &event.Event).Do()
+	return srv.Events.Patch("primary", eventID, event).Do()
 }
 
 func UUIDString(uuid pgtype.UUID) string {
