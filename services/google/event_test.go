@@ -20,7 +20,7 @@ func TestEventContext(t *testing.T) {
 		{"ends with number +abc9", []string{"abc9"}},
 	} {
 		t.Run(tc.summary, func(t *testing.T) {
-			e := Event{
+			e := EventModel{
 				Event: calendar.Event{
 					Summary: tc.summary,
 				},
@@ -45,7 +45,7 @@ func TestEventContainerContexts(t *testing.T) {
 		{"=read =watch just consume things", []string{"read", "watch"}},
 	} {
 		t.Run(tc.summary, func(t *testing.T) {
-			e := Event{
+			e := EventModel{
 				Event: calendar.Event{
 					Summary: tc.summary,
 				},
@@ -69,7 +69,7 @@ func TestEventIsContainer(t *testing.T) {
 		{"=read =watch just consume things", true},
 	} {
 		t.Run(tc.summary, func(t *testing.T) {
-			e := Event{
+			e := EventModel{
 				Event: calendar.Event{
 					Summary: tc.summary,
 				},
@@ -100,7 +100,7 @@ func TestEventIsContainerFor(t *testing.T) {
 		//{"==foo", "foo", false},
 	} {
 		t.Run(tc.summary, func(t *testing.T) {
-			e := Event{
+			e := EventModel{
 				Event: calendar.Event{
 					Summary: tc.summary,
 				},

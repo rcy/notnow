@@ -27,7 +27,7 @@ type fetchEventsParam struct {
 	Max time.Time
 }
 
-func fetchEvents(ctx context.Context, srv *calendar.Service, param fetchEventsParam) ([]Event, error) {
+func fetchEvents(ctx context.Context, srv *calendar.Service, param fetchEventsParam) ([]EventModel, error) {
 	gevents, err := srv.Events.
 		List("primary").
 		TimeMin(param.Min.Format(time.RFC3339)).
@@ -40,36 +40,40 @@ func fetchEvents(ctx context.Context, srv *calendar.Service, param fetchEventsPa
 		return nil, err
 	}
 
-	events := []Event{}
+	events := []EventModel{}
 	for _, it := range gevents.Items {
-		events = append(events, Event{*it})
+		model := EventModel{*it}
+		if model.AllDay() {
+			continue
+		}
+		events = append(events, model)
 	}
 
 	return events, nil
 }
 
-func fetchFutureEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
+func fetchFutureEvents(ctx context.Context, srv *calendar.Service) ([]EventModel, error) {
 	return fetchEvents(ctx, srv, fetchEventsParam{
 		Min: time.Now(),
 		Max: time.Now().Add(28 * 24 * time.Hour),
 	})
 }
 
-func fetchPastEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
+func fetchPastEvents(ctx context.Context, srv *calendar.Service) ([]EventModel, error) {
 	return fetchEvents(ctx, srv, fetchEventsParam{
 		Min: time.Now().Add(-28 * 24 * time.Hour),
 		Max: time.Now(),
 	})
 }
 
-func fetchAllEvents(ctx context.Context, srv *calendar.Service) ([]Event, error) {
+func fetchAllEvents(ctx context.Context, srv *calendar.Service) ([]EventModel, error) {
 	return fetchEvents(ctx, srv, fetchEventsParam{
 		Min: time.Now().Add(-28 * 24 * time.Hour),
 		Max: time.Now().Add(28 * 24 * time.Hour),
 	})
 }
 
-func UserEvents(ctx context.Context, userID pgtype.UUID) ([]Event, error) {
+func UserEvents(ctx context.Context, userID pgtype.UUID) ([]EventModel, error) {
 	srv, err := ServiceForUser(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -78,7 +82,7 @@ func UserEvents(ctx context.Context, userID pgtype.UUID) ([]Event, error) {
 	return fetchFutureEvents(ctx, srv)
 }
 
-func UserEvent(ctx context.Context, userID pgtype.UUID, eventID string) (*Event, error) {
+func UserEvent(ctx context.Context, userID pgtype.UUID, eventID string) (*EventModel, error) {
 	srv, err := ServiceForUser(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -89,11 +93,11 @@ func UserEvent(ctx context.Context, userID pgtype.UUID, eventID string) (*Event,
 		return nil, err
 	}
 
-	return &Event{*gevent}, nil
+	return &EventModel{*gevent}, nil
 }
 
 type TimeGrouping struct {
-	Events map[string][]Event
+	Events map[string][]EventModel
 	Keys   []string
 }
 
@@ -105,7 +109,7 @@ func UserEventsGroupedByDay(ctx context.Context, userID pgtype.UUID) (*TimeGroup
 	}
 
 	tg := TimeGrouping{
-		Events: map[string][]Event{},
+		Events: map[string][]EventModel{},
 		Keys:   []string{},
 	}
 
@@ -155,7 +159,7 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, summary string, du
 		End:   &calendar.EventDateTime{DateTime: dummyStartAt.Add(duration).Format(time.RFC3339)},
 	}
 
-	startAt, err := findNextAvailableTime(ctx, srv, &Event{event})
+	startAt, err := findNextAvailableTime(ctx, srv, &EventModel{event})
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +198,7 @@ func StringUUID(str string) pgtype.UUID {
 	return uuid
 }
 
-func findNextAvailableTime(ctx context.Context, srv *calendar.Service, ev *Event) (*time.Time, error) {
+func findNextAvailableTime(ctx context.Context, srv *calendar.Service, ev *EventModel) (*time.Time, error) {
 	events, err := fetchFutureEvents(ctx, srv)
 	if err != nil {
 		return nil, err
@@ -203,21 +207,21 @@ func findNextAvailableTime(ctx context.Context, srv *calendar.Service, ev *Event
 	now := time.Now()
 
 	// start at the time of the first matching context
-	if contexts := ev.Contexts(); len(contexts) > 0 {
-		// TODO consider all contexts, not just first one
-		context := contexts[0]
-		containerEvent := findContextContainer(events, context)
-		now = containerEvent.StartAt()
+	// if contexts := ev.Contexts(); len(contexts) > 0 {
+	// 	// TODO consider all contexts, not just first one
+	// 	context := contexts[0]
+	// 	containerEvent := findContextContainer(events, context)
+	// 	now = containerEvent.StartAt()
 
-		// trim out the older events
-		newEvents := []Event{}
-		for _, ev := range events {
-			if !ev.StartAt().Before(containerEvent.StartAt()) {
-				newEvents = append(newEvents, ev)
-			}
-		}
-		events = newEvents
-	}
+	// 	// trim out the older events
+	// 	newEvents := []Event{}
+	// 	for _, ev := range events {
+	// 		if !ev.StartAt().Before(containerEvent.StartAt()) {
+	// 			newEvents = append(newEvents, ev)
+	// 		}
+	// 	}
+	// 	events = newEvents
+	// }
 
 	for _, event := range events {
 		if now.Before(event.StartAt()) {
@@ -233,7 +237,7 @@ func findNextAvailableTime(ctx context.Context, srv *calendar.Service, ev *Event
 }
 
 // Return first event that is a container for context
-func findContextContainer(events []Event, context string) *Event {
+func findContextContainer(events []EventModel, context string) *EventModel {
 	for _, ev := range events {
 		if ev.IsContainerFor(context) {
 			return &ev
@@ -267,17 +271,40 @@ func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {
 
 		dur := ev.Duration()
 
+		if ev.Start.Date != "" {
+			// was all day, change to 15 minute
+			dur = time.Minute * 15
+		}
+
 		startAt, err := findNextAvailableTime(ctx, srv, &ev)
 		if err != nil {
 			return fmt.Errorf("ReschedulePastTasks: %w", err)
 		}
 
-		ev.Start.DateTime = startAt.Format(time.RFC3339)
-		ev.End.DateTime = startAt.Add(dur).Format(time.RFC3339)
-		log.Printf("%s startAt=%v ev.Duration()=%v %v %v", ev.Summary, startAt, ev.Duration(), ev.Start.DateTime, ev.End.DateTime)
-		_, err = srv.Events.Update("primary", ev.Id, &ev.Event).Do()
+		fmt.Printf("startAt |%v|\n", startAt)
+		fmt.Printf("event |%#v| |%#v|", ev.Start, ev.End)
+
+		newEvent := &calendar.Event{
+			Start: &calendar.EventDateTime{
+				Date:       "",
+				DateTime:   startAt.Format(time.RFC3339),
+				TimeZone:   "America/Creston",
+				NullFields: []string{"Date"},
+			},
+			End: &calendar.EventDateTime{
+				Date:       "",
+				TimeZone:   "America/Creston",
+				DateTime:   startAt.Add(dur).Format(time.RFC3339),
+				NullFields: []string{"Date"},
+			},
+		}
+
+		//ev.Start.DateTime =  startAt.Format(time.RFC3339)
+		//ev.End.DateTime = startAt.Add(dur).Format(time.RFC3339)
+		//log.Printf("%s startAt=%v ev.Duration()=%v %v %v", ev.Summary, startAt, ev.Duration(), ev.Start.DateTime, ev.End.DateTime)
+		_, err = srv.Events.Patch("primary", ev.Id, newEvent).Do()
 		if err != nil {
-			return fmt.Errorf("ReschedulePastTasks: %w", err)
+			return fmt.Errorf("ReschedulePastTasks: %+v %w", newEvent.Start, err)
 		}
 	}
 	return nil
@@ -310,7 +337,7 @@ func UpdateTaskDescriptions(ctx context.Context, userID pgtype.UUID) error {
 }
 
 // Update event to include link in the description to this event if it does not already exist
-func updateTaskDescription(srv *calendar.Service, ev *Event) error {
+func updateTaskDescription(srv *calendar.Service, ev *EventModel) error {
 	url := eventURL(ev.Id)
 
 	match, err := regexp.MatchString(regexp.QuoteMeta(url), ev.Description)

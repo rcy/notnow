@@ -8,36 +8,36 @@ import (
 	"google.golang.org/api/calendar/v3"
 )
 
-type Event struct {
+type EventModel struct {
 	calendar.Event
 }
 
-func (e *Event) AllDay() bool {
+func (e *EventModel) AllDay() bool {
 	return e.Start.DateTime == ""
 }
 
-func (e *Event) StartDate() string {
+func (e *EventModel) StartDate() string {
 	if e.Start.Date != "" {
 		return e.Start.Date
 	}
 	return e.StartAt().Format(time.DateOnly)
 }
 
-func (e *Event) StartTime() string {
+func (e *EventModel) StartTime() string {
 	if e.Start.Date != "" {
 		return ""
 	}
 	return e.StartAt().Format("15:04")
 }
 
-func (e *Event) EndTime() string {
+func (e *EventModel) EndTime() string {
 	if e.End.Date != "" {
 		return ""
 	}
 	return e.EndAt().Format("15:04")
 }
 
-func (e *Event) StartAt() time.Time {
+func (e *EventModel) StartAt() time.Time {
 	if e.Start.DateTime == "" {
 		t, _ := time.Parse(time.DateOnly, e.Start.Date)
 		return t
@@ -46,7 +46,7 @@ func (e *Event) StartAt() time.Time {
 	return t
 }
 
-func (e *Event) EndAt() time.Time {
+func (e *EventModel) EndAt() time.Time {
 	if e.End.DateTime == "" {
 		t, _ := time.Parse(time.DateOnly, e.End.Date)
 		return t
@@ -55,17 +55,17 @@ func (e *Event) EndAt() time.Time {
 	return t
 }
 
-func (e *Event) Duration() time.Duration {
+func (e *EventModel) Duration() time.Duration {
 	return e.EndAt().Sub(e.StartAt())
 }
 
-func (e *Event) IsTask() bool {
+func (e *EventModel) IsTask() bool {
 	return strings.HasPrefix(e.Summary, taskPrefix)
 }
 
 var contextRegexp = regexp.MustCompile(regexp.QuoteMeta(withContextPrefix) + "(\\w+)")
 
-func (e *Event) Contexts() []string {
+func (e *EventModel) Contexts() []string {
 	contexts := []string{}
 	for _, matches := range contextRegexp.FindAllStringSubmatch(e.Summary, -1) {
 		contexts = append(contexts, matches[1])
@@ -73,13 +73,13 @@ func (e *Event) Contexts() []string {
 	return contexts
 }
 
-func (e *Event) IsContainer() bool {
+func (e *EventModel) IsContainer() bool {
 	return strings.HasPrefix(e.Summary, containerPrefix)
 }
 
 var containerRegexp = regexp.MustCompile(regexp.QuoteMeta(containerPrefix) + "(\\w+)")
 
-func (e *Event) ContainerContexts() []string {
+func (e *EventModel) ContainerContexts() []string {
 	contexts := []string{}
 	for _, matches := range containerRegexp.FindAllStringSubmatch(e.Summary, -1) {
 		contexts = append(contexts, matches[1])
@@ -87,7 +87,7 @@ func (e *Event) ContainerContexts() []string {
 	return contexts
 }
 
-func (e *Event) IsContainerFor(context string) bool {
+func (e *EventModel) IsContainerFor(context string) bool {
 	for _, c := range e.ContainerContexts() {
 		if c == context {
 			return true

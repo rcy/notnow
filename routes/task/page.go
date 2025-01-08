@@ -57,7 +57,7 @@ func page(w http.ResponseWriter, r *http.Request) {
 
 	pageTemplate.Execute(w, struct {
 		State string
-		Event *google.Event
+		Event *google.EventModel
 	}{
 		State: state,
 		//Task:  task,
