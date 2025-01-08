@@ -15,6 +15,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const CookieName = "notnow.session"
+
 func Router(r chi.Router) {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, google.Config.AuthCodeURL("", oauth2.AccessTypeOffline, oauth2.ApprovalForce), http.StatusFound)
@@ -91,7 +93,7 @@ func Router(r chi.Router) {
 		}
 
 		http.SetCookie(w, &http.Cookie{
-			Name:    "yikes.session",
+			Name:    CookieName,
 			Value:   value.(string),
 			Expires: time.Now().Add(30 * 24 * time.Hour),
 			Path:    "/",

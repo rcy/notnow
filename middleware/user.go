@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"yikes/db"
 	"yikes/db/yikes"
+	"yikes/routes/auth"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -17,7 +18,7 @@ func User(next http.Handler) http.Handler {
 
 		queries := yikes.New(db.Conn)
 
-		cookie, err := r.Cookie("yikes.session")
+		cookie, err := r.Cookie(auth.CookieName)
 		if err != nil {
 			http.Redirect(w, r, "/auth", http.StatusSeeOther)
 			return
