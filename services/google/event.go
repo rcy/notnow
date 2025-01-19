@@ -1,6 +1,8 @@
 package google
 
 import (
+	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -94,4 +96,9 @@ func (e *EventModel) IsContainerFor(context string) bool {
 		}
 	}
 	return false
+}
+
+// Return the url to the event in this application
+func (e *EventModel) AppURL() string {
+	return fmt.Sprintf("%s/events/%s", os.Getenv("ROOT_URL"), e.Id)
 }

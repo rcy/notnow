@@ -5,7 +5,6 @@ import (
 	"encoding/base32"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -20,6 +19,7 @@ const (
 	taskPrefix        = "."
 	containerPrefix   = "="
 	withContextPrefix = "+"
+	taskColorID       = "8" // gray
 )
 
 type fetchEventsParam struct {
@@ -129,10 +129,6 @@ func UserEventsGroupedByDay(ctx context.Context, userID pgtype.UUID) (*TimeGroup
 	return &tg, nil
 }
 
-func eventURL(id string) string {
-	return fmt.Sprintf("%s/events/%s", os.Getenv("ROOT_URL"), id)
-}
-
 func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, summary string, duration time.Duration) (*calendar.Event, error) {
 	srv, err := ServiceForUser(ctx, userID)
 	if err != nil {
@@ -151,13 +147,14 @@ func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, summary string, du
 
 	dummyStartAt := time.Now().Add(-24 * time.Hour)
 	event := calendar.Event{
-		Id:          id,
-		Summary:     taskPrefix + summary,
-		Description: eventURL(id),
+		Id:      id,
+		Summary: taskPrefix + summary,
 		// need to provide a start and end time so duration can be computed
 		Start: &calendar.EventDateTime{DateTime: dummyStartAt.Format(time.RFC3339)},
 		End:   &calendar.EventDateTime{DateTime: dummyStartAt.Add(duration).Format(time.RFC3339)},
 	}
+	model := EventModel{event}
+	event.Description = model.AppURL()
 
 	startAt, err := findNextAvailableTime(ctx, srv, &EventModel{event})
 	if err != nil {
@@ -302,7 +299,7 @@ func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {
 				DateTime:   startAt.Add(dur).Format(time.RFC3339),
 				NullFields: []string{"Date"},
 			},
-			ColorId: "8",
+			ColorId: taskColorID,
 		}
 
 		//ev.Start.DateTime =  startAt.Format(time.RFC3339)
@@ -337,6 +334,11 @@ func UpdateTaskDescriptions(ctx context.Context, userID pgtype.UUID) error {
 		if err != nil {
 			return err
 		}
+
+		err = updateColor(srv, &ev)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -344,7 +346,7 @@ func UpdateTaskDescriptions(ctx context.Context, userID pgtype.UUID) error {
 
 // Update event to include link in the description to this event if it does not already exist
 func updateTaskDescription(srv *calendar.Service, ev *EventModel) error {
-	url := eventURL(ev.Id)
+	url := ev.AppURL()
 
 	match, err := regexp.MatchString(regexp.QuoteMeta(url), ev.Description)
 	if err != nil {
@@ -358,6 +360,22 @@ func updateTaskDescription(srv *calendar.Service, ev *EventModel) error {
 		Description: fmt.Sprintf("%s\n%s", url, ev.Description),
 	}
 	_, err = srv.Events.Patch("primary", ev.Id, patchEv).Context(context.TODO()).Do()
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// Update event to be gray
+func updateColor(srv *calendar.Service, ev *EventModel) error {
+	if ev.ColorId == taskColorID {
+		return nil
+	}
+
+	patchEv := &calendar.Event{
+		ColorId: taskColorID,
+	}
+	_, err := srv.Events.Patch("primary", ev.Id, patchEv).Context(context.TODO()).Do()
 	if err != nil {
 		return err
 	}
