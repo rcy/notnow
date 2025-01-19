@@ -2,19 +2,15 @@ package colors
 
 import (
 	_ "embed"
-	"fmt"
 	"net/http"
-	"text/template"
+	"sort"
+	"strconv"
+	"yikes/internal/html"
 	mw "yikes/middleware"
 	"yikes/services/google"
 
-	"google.golang.org/api/calendar/v3"
-)
-
-var (
-	//go:embed page.gohtml
-	pageContent  string
-	pageTemplate = template.Must(template.New("").Parse(pageContent))
+	. "maragu.dev/gomponents"
+	. "maragu.dev/gomponents/html"
 )
 
 func Page(w http.ResponseWriter, r *http.Request) {
@@ -27,13 +23,19 @@ func Page(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("%+v\n", colors.Calendar)
-
-	err = pageTemplate.Execute(w, struct {
-		Colors map[string]calendar.ColorDefinition
-	}{
-		Colors: colors.Event,
+	keys := html.MapKeys(colors.Event)
+	sort.Slice(keys, func(i int, j int) bool {
+		a, _ := strconv.Atoi(keys[i])
+		b, _ := strconv.Atoi(keys[j])
+		return a < b
 	})
+
+	err = Div(
+		Map(keys, func(k string) Node {
+			c := colors.Event[k]
+			return Div(Textf("%s:%s", k, c.Background), Style("background:"+c.Background))
+		}),
+	).Render(w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
