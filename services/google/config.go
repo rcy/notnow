@@ -6,6 +6,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const baseURL = "http://localhost:8088"
+
 var Config = oauth2.Config{
 	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
@@ -13,12 +15,12 @@ var Config = oauth2.Config{
 		AuthURL:  "https://accounts.google.com/o/oauth2/auth",
 		TokenURL: "https://accounts.google.com/o/oauth2/token",
 	},
-	RedirectURL: "http://localhost:8080/auth/callback",
+	RedirectURL: baseURL + "/auth/callback",
 	Scopes: []string{
 		"openid",
 		"profile",
 		"email",
 		"https://www.googleapis.com/auth/calendar.events",
-		"https://www.googleapis.com/auth/calendar.calendars.readonly",
+		"https://www.googleapis.com/auth/calendar.calendarlist.readonly",
 	},
 }

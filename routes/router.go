@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"yikes/middleware"
 	"yikes/routes/auth"
+	"yikes/routes/colors"
 	"yikes/routes/hacks"
 	"yikes/routes/task"
 	"yikes/routes/tasks"
@@ -17,6 +18,7 @@ func Router(r chi.Router) {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.User)
 		r.Get("/", Page)
+		r.Get("/colors", colors.Page)
 		r.Post("/hacks/reschedule", hacks.PostReschedule)
 		r.Route("/tasks", tasks.Router)
 		r.Route("/events", task.Router)

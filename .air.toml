@@ -4,8 +4,8 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "./tmp/main"
-  cmd = "go build -o ./tmp/main ."
+  bin = "./tmp/notnow"
+  cmd = "pkill notnow; go build -o ./tmp/notnow ."
   delay = 0
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules"]
   exclude_file = []

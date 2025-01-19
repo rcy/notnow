@@ -14,3 +14,6 @@ stop:
 
 down:
 	docker compose down
+
+sql:
+	psql ${DATABASE_URL}

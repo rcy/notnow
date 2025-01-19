@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 	"yikes/db"
 	"yikes/jobs/rescheduler"
 	"yikes/routes"
@@ -23,7 +24,13 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Route("/", routes.Router)
 
-	go rescheduler.Loop()
+	go func() {
+		for {
+			err := rescheduler.RescheduleAll()
+			log.Println(err)
+			time.Sleep(time.Minute * 5)
+		}
+	}()
 
 	// Start the server
 	port := os.Getenv("PORT")

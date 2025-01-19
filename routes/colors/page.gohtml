@@ -1,0 +1,7 @@
+<html>
+  {{range $key, $value := .Colors}}
+    <div style="background:{{$value.Background}}; foreground:{{$value.Foreground}}">
+      {{$key}}
+    </div>
+  {{end}}
+</html>

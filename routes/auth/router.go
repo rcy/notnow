@@ -19,6 +19,12 @@ const CookieName = "notnow.session"
 
 func Router(r chi.Router) {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`
+<html><div>not now</div> <a href="/auth/google">login</a></html>
+`))
+	})
+
+	r.Get("/google", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, google.Config.AuthCodeURL("", oauth2.AccessTypeOffline, oauth2.ApprovalForce), http.StatusFound)
 	})
 

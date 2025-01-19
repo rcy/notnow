@@ -43,9 +43,9 @@ func fetchEvents(ctx context.Context, srv *calendar.Service, param fetchEventsPa
 	events := []EventModel{}
 	for _, it := range gevents.Items {
 		model := EventModel{*it}
-		if model.AllDay() {
-			continue
-		}
+		// if model.AllDay() {
+		// 	continue
+		// }
 		events = append(events, model)
 	}
 
@@ -130,7 +130,7 @@ func UserEventsGroupedByDay(ctx context.Context, userID pgtype.UUID) (*TimeGroup
 }
 
 func eventURL(id string) string {
-	return fmt.Sprintf("%s/event/%s", os.Getenv("ROOT_URL"), id)
+	return fmt.Sprintf("%s/events/%s", os.Getenv("ROOT_URL"), id)
 }
 
 func CreateTaskEvent(ctx context.Context, userID pgtype.UUID, summary string, duration time.Duration) (*calendar.Event, error) {
@@ -207,21 +207,26 @@ func findNextAvailableTime(ctx context.Context, srv *calendar.Service, ev *Event
 	now := time.Now()
 
 	// start at the time of the first matching context
-	// if contexts := ev.Contexts(); len(contexts) > 0 {
-	// 	// TODO consider all contexts, not just first one
-	// 	context := contexts[0]
-	// 	containerEvent := findContextContainer(events, context)
-	// 	now = containerEvent.StartAt()
+	if contexts := ev.Contexts(); len(contexts) > 0 {
+		// TODO consider all contexts, not just first one
+		context := contexts[0]
+		containerEvent := findContextContainer(events, context)
+		if containerEvent != nil {
+			now = containerEvent.StartAt()
 
-	// 	// trim out the older events
-	// 	newEvents := []Event{}
-	// 	for _, ev := range events {
-	// 		if !ev.StartAt().Before(containerEvent.StartAt()) {
-	// 			newEvents = append(newEvents, ev)
-	// 		}
-	// 	}
-	// 	events = newEvents
-	// }
+			// trim out the older events
+			newEvents := []EventModel{}
+			for _, ev := range events {
+				if ev.Id == containerEvent.Id {
+					continue
+				}
+				if !ev.StartAt().Before(containerEvent.StartAt()) {
+					newEvents = append(newEvents, ev)
+				}
+			}
+			events = newEvents
+		}
+	}
 
 	for _, event := range events {
 		if now.Before(event.StartAt()) {
@@ -297,6 +302,7 @@ func ReschedulePastTasks(ctx context.Context, userID pgtype.UUID) error {
 				DateTime:   startAt.Add(dur).Format(time.RFC3339),
 				NullFields: []string{"Date"},
 			},
+			ColorId: "8",
 		}
 
 		//ev.Start.DateTime =  startAt.Format(time.RFC3339)
@@ -347,11 +353,13 @@ func updateTaskDescription(srv *calendar.Service, ev *EventModel) error {
 	if match {
 		return nil
 	}
-	ev.Description = fmt.Sprintf("%s\n%s", url, ev.Description)
-	gev, err := srv.Events.Update("primary", ev.Id, &ev.Event).Do()
+
+	patchEv := &calendar.Event{
+		Description: fmt.Sprintf("%s\n%s", url, ev.Description),
+	}
+	_, err = srv.Events.Patch("primary", ev.Id, patchEv).Context(context.TODO()).Do()
 	if err != nil {
 		return err
 	}
-	ev.Event = *gev
 	return err
 }
