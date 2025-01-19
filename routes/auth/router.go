@@ -8,20 +8,28 @@ import (
 	"time"
 	"yikes/db"
 	"yikes/db/yikes"
+	"yikes/internal/html"
 	"yikes/services/google"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/oauth2"
+	. "maragu.dev/gomponents"
+	. "maragu.dev/gomponents/html"
 )
 
 const CookieName = "notnow.session"
 
 func Router(r chi.Router) {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`
-<html><div>not now</div> <a href="/auth/google">login</a></html>
-`))
+		err := html.Layout("auth",
+			Div(Text("not now")),
+			A(Href("/auth/google"), Text("login"), Class(html.ButtonClass)),
+		).Render(w)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	})
 
 	r.Get("/google", func(w http.ResponseWriter, r *http.Request) {
