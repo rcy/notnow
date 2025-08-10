@@ -6,7 +6,7 @@ select tokens.*
 from tokens
 join users on tokens.user_id = users.id
 where users.id = $1
-order by created_at desc
+order by tokens.created_at desc
 limit 1;
 
 -- name: CreateToken :one

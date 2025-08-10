@@ -18,7 +18,7 @@ import (
 	. "maragu.dev/gomponents/html"
 )
 
-const CookieName = "notnow.session"
+const CookieName = "notnow.session.uuid"
 
 func Router(r chi.Router) {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {

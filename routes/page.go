@@ -23,7 +23,7 @@ func Page(w http.ResponseWriter, r *http.Request) {
 
 	groupedEvents, err := google.UserEventsGroupedByDay(ctx, user.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "groupedEvents:"+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

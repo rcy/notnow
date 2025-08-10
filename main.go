@@ -10,8 +10,8 @@ import (
 	"yikes/jobs/rescheduler"
 	"yikes/routes"
 
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {

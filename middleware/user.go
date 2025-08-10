@@ -26,7 +26,7 @@ func User(next http.Handler) http.Handler {
 		uuid := pgtype.UUID{}
 		err = uuid.Scan(cookie.Value)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "uuid scan:"+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
